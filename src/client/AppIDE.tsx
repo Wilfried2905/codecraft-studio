@@ -106,8 +106,8 @@ export default function AppIDE() {
 
       {/* Main Content: Chat + Preview Split */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Chat Interface (Left 50%) */}
-        <div className="w-1/2 border-r border-slate-800">
+        {/* Chat Interface (Left 30%) */}
+        <div className="w-[30%] border-r border-slate-800">
           <ChatInterface
             messages={messages}
             onSendMessage={handleSendMessage}
@@ -115,8 +115,8 @@ export default function AppIDE() {
           />
         </div>
 
-        {/* Preview Panel (Right 50%) */}
-        <div className="w-1/2">
+        {/* Preview Panel (Right 70%) */}
+        <div className="w-[70%]">
           <PreviewPanel
             code={generatedCode}
             loading={loading}
