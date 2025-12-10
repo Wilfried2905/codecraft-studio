@@ -5,6 +5,7 @@ import ChatInterface from './components/ChatInterface'
 import PreviewPanel from './components/PreviewPanel'
 import ExportManager from './components/ExportManager'
 import DebugPanel from './components/DebugPanel'
+import type { Log } from '../services/logger'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -44,12 +45,17 @@ export default function AppIDE() {
 
   // Écouter les logs du système
   useEffect(() => {
-    const handleLog = (log: Log) => {
-      setDebugLogs(prev => [...prev, log])
+    const setupLogger = async () => {
+      const { logger } = await import('../services/logger')
+      const handleLog = (log: Log) => {
+        setDebugLogs(prev => [...prev, log])
+      }
+
+      logger.addListener(handleLog)
+      return () => logger.removeListener(handleLog)
     }
 
-    logger.addListener(handleLog)
-    return () => logger.removeListener(handleLog)
+    setupLogger()
   }, [])
 
   // Apply dark mode
@@ -180,12 +186,11 @@ export default function AppIDE() {
       </div>
 
       {/* Debug Panel */}
-      {showDebug && (
-        <DebugPanel
-          logs={debugLogs}
-          onClose={() => setShowDebug(false)}
-        />
-      )}
+      <DebugPanel
+        logs={debugLogs as any}
+        isOpen={showDebug}
+        onToggle={() => setShowDebug(!showDebug)}
+      />
 
       {/* Export Modal */}
       {showExport && (

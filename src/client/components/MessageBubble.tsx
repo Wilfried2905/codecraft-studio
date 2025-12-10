@@ -150,21 +150,26 @@ export default function MessageBubble({
           <div className="prose prose-sm prose-invert max-w-none">
             <ReactMarkdown
               components={{
-                code({ node, inline, className, children, ...props }) {
+                code: ({ className, children, ...props }: any) => {
                   const match = /language-(\w+)/.exec(className || '')
-                  return !inline && match ? (
+                  const isInline = !match
+                  
+                  if (isInline) {
+                    return (
+                      <code className="bg-slate-900/50 px-1 py-0.5 rounded text-teal-400" {...props}>
+                        {children}
+                      </code>
+                    )
+                  }
+                  
+                  return (
                     <SyntaxHighlighter
-                      style={vscDarkPlus}
+                      style={vscDarkPlus as any}
                       language={match[1]}
                       PreTag="div"
-                      {...props}
                     >
                       {String(children).replace(/\n$/, '')}
                     </SyntaxHighlighter>
-                  ) : (
-                    <code className="bg-slate-900/50 px-1 py-0.5 rounded text-teal-400" {...props}>
-                      {children}
-                    </code>
                   )
                 }
               }}
