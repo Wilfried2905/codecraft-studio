@@ -6,6 +6,19 @@ export { AIDeveloper } from './aiDeveloper'
 export { IntentAnalyzer } from './intentAnalyzer'
 export { ClarificationEngine } from './clarificationEngine'
 export { AgentOrchestrator } from './agentOrchestrator'
+export { 
+  AppError, 
+  ValidationError, 
+  APIError, 
+  FileProcessingError, 
+  AgentExecutionError,
+  formatErrorMessage,
+  logError,
+  retryAsync,
+  withTimeout,
+  safeJsonParse,
+  validate
+} from './errorHandler'
 
 export type { UserIntent, Requirements } from './intentAnalyzer'
 export type { ClarificationResponse } from './clarificationEngine'

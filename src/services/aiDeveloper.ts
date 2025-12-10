@@ -6,6 +6,7 @@
 import { IntentAnalyzer, Requirements, UserIntent } from './intentAnalyzer';
 import { ClarificationEngine } from './clarificationEngine';
 import { AgentOrchestrator, AgentResult } from './agentOrchestrator';
+import { logError, formatErrorMessage, ValidationError } from './errorHandler';
 
 export interface DeveloperResponse {
   type: 'clarification' | 'execution' | 'error';
@@ -43,6 +44,15 @@ export class AIDeveloper {
     uploadedFiles?: Array<{ name: string; content: string; type: string }>
   ): Promise<DeveloperResponse> {
     try {
+      // Validation
+      if (!userPrompt || userPrompt.trim().length === 0) {
+        throw new ValidationError('Le prompt ne peut pas être vide');
+      }
+
+      if (userPrompt.length > 10000) {
+        throw new ValidationError('Le prompt est trop long (maximum 10000 caractères)');
+      }
+
       // Étape 1: Analyser l'intention
       const { intent, requirements } = await this.intentAnalyzer.analyze(userPrompt, uploadedFiles);
 
@@ -68,9 +78,10 @@ export class AIDeveloper {
       return await this.executeGeneration(requirements);
 
     } catch (error) {
+      logError(error, 'AIDeveloper.process');
       return {
         type: 'error',
-        message: `Erreur: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: formatErrorMessage(error),
       };
     }
   }
