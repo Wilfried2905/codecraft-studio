@@ -34,6 +34,14 @@ CodeCraft Studio est un IDE conversationnel innovant qui combine:
 - **Preview Engine** avec modes preview/editor/split
 - **Keyboard Shortcuts** (Ctrl+B, Ctrl+T, Ctrl+E)
 
+### ✅ **JOUR 3 - Monaco Editor + API Routes**
+- **Monaco Editor** intégration complète avec 20+ langages
+- **API Routes** sécurisées (/api/generate, /api/variations)
+- **Anthropic Claude** intégration (Sonnet 4)
+- **Chat amélioré** avec appels API réels
+- **Syntax highlighting** et autocompletion
+- **Mode placeholder** pour développement sans clé API
+
 ---
 
 ## 🎨 Design System
@@ -190,19 +198,28 @@ npm run git:status    # Git status
 - ✅ Templates Library (100%)
 - ✅ File Manager (100%)
 - ✅ Export Manager (100%)
-- ⏳ Monaco Editor (0%)
-- ⏳ API Integration (0%)
+- ✅ Monaco Editor (100%)
+- ✅ API Integration (100%)
+- ⏳ Agent Variations (0%)
 - ⏳ Supabase (0%)
 - ⏳ WebContainers (0%)
 
-**Score actuel**: ~40/100 - Foundation solide !
+**Score actuel**: ~65/100 - Très bon progrès ! 🚀
 
 ---
 
 ## 📝 Notes importantes
 
 ### ⚠️ API Anthropic
-L'API Anthropic n'est pas encore connectée. Pour l'instant, un placeholder HTML est généré pour tester l'interface.
+L'API Anthropic est connectée ! Deux modes :
+- **Mode Placeholder** : Sans clé API (pour tester l'interface)
+- **Mode Production** : Avec clé API dans `.dev.vars`
+
+Pour activer le mode production :
+```bash
+# Créer .dev.vars à la racine
+echo "ANTHROPIC_API_KEY=votre_cle_ici" > .dev.vars
+```
 
 ### 🔐 Sécurité
 - Les clés API seront stockées comme secrets Cloudflare
