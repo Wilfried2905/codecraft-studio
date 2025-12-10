@@ -1,12 +1,18 @@
 import { Hono } from 'hono'
+import { serveStatic } from 'hono/cloudflare-workers'
 import { renderer } from './renderer'
 
-const app = new Hono()
+type Bindings = {
+  ANTHROPIC_API_KEY: string
+}
 
-app.use(renderer)
+const app = new Hono<{ Bindings: Bindings }>()
 
-app.get('/', (c) => {
-  return c.render(<h1>Hello!</h1>)
-})
+// Serve static files
+app.use('/static/*', serveStatic({ root: './' }))
+app.use('/favicon.ico', serveStatic({ path: './favicon.ico' }))
+
+// Use renderer for HTML pages
+app.get('*', renderer)
 
 export default app
