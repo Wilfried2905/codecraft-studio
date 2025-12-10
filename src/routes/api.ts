@@ -7,6 +7,57 @@ type Bindings = {
 
 const api = new Hono<{ Bindings: Bindings }>()
 
+// Helper function to extract text from different file types
+async function extractTextFromFile(file: File): Promise<string> {
+  const fileType = file.type
+  const fileName = file.name.toLowerCase()
+
+  try {
+    // Text files
+    if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+      return await file.text()
+    }
+
+    // PDF files - Note: In Cloudflare Workers, we'd need a library like pdf-parse
+    // For now, return a placeholder indicating PDF support is limited
+    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      return `[PDF File: ${file.name}]\n\nNote: Pour une meilleure analyse PDF, veuillez fournir le contenu en format texte.\nLe fichier PDF a été reçu (${(file.size / 1024).toFixed(2)} KB).`
+    }
+
+    // Word documents (.docx, .doc)
+    if (fileName.endsWith('.docx') || fileName.endsWith('.doc') || 
+        fileType.includes('wordprocessingml') || fileType.includes('msword')) {
+      // In a real implementation, you'd use mammoth.js or similar
+      // For now, try to extract as text
+      const arrayBuffer = await file.arrayBuffer()
+      return `[Word Document: ${file.name}]\n\nNote: Pour une meilleure analyse Word, veuillez copier le contenu en format texte.\nLe document Word a été reçu (${(file.size / 1024).toFixed(2)} KB).`
+    }
+
+    // Excel files (.xlsx, .xls)
+    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
+        fileType.includes('spreadsheetml') || fileType.includes('ms-excel')) {
+      // In a real implementation, you'd use xlsx.js or similar
+      return `[Excel Spreadsheet: ${file.name}]\n\nNote: Pour une meilleure analyse Excel, veuillez fournir les données en format CSV ou texte.\nLe fichier Excel a été reçu (${(file.size / 1024).toFixed(2)} KB).`
+    }
+
+    // PowerPoint files (.pptx, .ppt)
+    if (fileName.endsWith('.pptx') || fileName.endsWith('.ppt') || 
+        fileType.includes('presentationml') || fileType.includes('ms-powerpoint')) {
+      // In a real implementation, you'd need a PowerPoint parser
+      return `[PowerPoint Presentation: ${file.name}]\n\nNote: Pour une meilleure analyse PowerPoint, veuillez fournir le contenu en format texte.\nLa présentation PowerPoint a été reçue (${(file.size / 1024).toFixed(2)} KB).`
+    }
+
+    // Fallback for unknown types
+    return `[File: ${file.name}]\n\nType: ${fileType || 'unknown'}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nNote: Ce type de fichier n'est pas encore supporté pour l'extraction de texte. Veuillez fournir le contenu en format texte.`
+
+  } catch (error) {
+    console.error('Error extracting text from file:', error)
+    return `[Error processing file: ${file.name}]\n\nUne erreur est survenue lors de l'extraction du contenu.`
+  }
+}
+
+const api = new Hono<{ Bindings: Bindings }>()
+
 // Enable CORS for frontend
 api.use('/*', cors())
 
@@ -270,6 +321,44 @@ Retourne UNIQUEMENT le code HTML complet, sans explications.`
     console.error('Variations error:', error)
     return c.json({ 
       error: 'Failed to generate variations',
+      message: error.message 
+    }, 500)
+  }
+})
+
+// Parse uploaded files (Word, Excel, PowerPoint, PDF)
+api.post('/parse-file', async (c) => {
+  try {
+    // Get uploaded file from form data
+    const formData = await c.req.formData()
+    const file = formData.get('file') as File
+
+    if (!file) {
+      return c.json({ error: 'No file provided' }, 400)
+    }
+
+    // Validate file size (max 10MB)
+    const MAX_SIZE = 10 * 1024 * 1024
+    if (file.size > MAX_SIZE) {
+      return c.json({ error: 'File too large (max 10MB)' }, 400)
+    }
+
+    // Extract text content from file
+    const content = await extractTextFromFile(file)
+
+    return c.json({
+      success: true,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      content,
+      timestamp: new Date().toISOString()
+    })
+
+  } catch (error: any) {
+    console.error('File parsing error:', error)
+    return c.json({ 
+      error: 'Failed to parse file',
       message: error.message 
     }, 500)
   }

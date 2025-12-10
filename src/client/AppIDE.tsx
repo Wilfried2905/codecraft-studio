@@ -36,70 +36,60 @@ export default function AppIDE() {
   }, [darkMode])
 
   // Handle sending a message
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string, uploadedFiles?: Array<{ name: string; content: string; type: string }>) => {
     // Add user message
+    let userMessageContent = message
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      userMessageContent += `\n\n📎 **Fichiers attachés:**\n${uploadedFiles.map(f => `- ${f.name}`).join('\n')}`
+    }
+
     const userMessage: Message = {
       role: 'user',
-      content: message,
+      content: userMessageContent,
       timestamp: Date.now()
     }
     setMessages(prev => [...prev, userMessage])
     setLoading(true)
 
     try {
-      // Call API to generate application
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: message,
-          agent: 'code', // Will be handled by intelligent router
-          template: null,
-          style: null,
-        }),
-      })
+      // Import AI Developer dynamically
+      const { AIDeveloper } = await import('../services/aiDeveloper')
+      const aiDeveloper = new AIDeveloper()
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      const data = await response.json()
-      
-      if (!data.success) {
-        throw new Error(data.error || 'Generation failed')
-      }
-
-      // Extract project name from prompt if possible
-      const projectNameMatch = message.match(/(?:crée|créer|construis|développe)\s+(?:une?\s+)?(?:app(?:lication)?\s+)?(?:de\s+)?(.+?)(?:\s+avec|\s+en|$)/i)
-      if (projectNameMatch) {
-        const extractedName = projectNameMatch[1].trim()
-        setProjectName(extractedName.charAt(0).toUpperCase() + extractedName.slice(1))
-      }
+      // Process user request with AI Developer
+      const response = await aiDeveloper.process(message, uploadedFiles)
 
       // Add assistant response
       const assistantMessage: Message = {
         role: 'assistant',
-        content: data.placeholder 
-          ? `✨ **Application créée !**\n\nVotre application est maintenant visible dans le preview.\n\n*Note: Mode placeholder activé. Configurez votre clé API Anthropic pour des générations réelles.*` 
-          : `✨ **Application créée avec succès !**\n\nVotre application est maintenant fonctionnelle et visible dans le preview. Vous pouvez la modifier en continuant la conversation.`,
+        content: response.message,
         timestamp: Date.now()
       }
       setMessages(prev => [...prev, assistantMessage])
-      
-      // Update generated code
-      setGeneratedCode(data.code)
+
+      // If code was generated, update the preview
+      if (response.code) {
+        setGeneratedCode(response.code)
+        
+        // Extract project name from requirements if available
+        if (response.requirements?.appType) {
+          const appType = response.requirements.appType
+          setProjectName(appType.charAt(0).toUpperCase() + appType.slice(1).replace('-', ' '))
+        }
+      }
+
+      setLoading(false)
 
     } catch (error) {
-      console.error('Generation error:', error)
+      console.error('Error processing message:', error)
+      
+      // Add error message
       const errorMessage: Message = {
         role: 'assistant',
-        content: `❌ **Erreur lors de la génération**\n\n${error instanceof Error ? error.message : 'Une erreur inconnue est survenue'}`,
+        content: `❌ **Erreur:** ${error instanceof Error ? error.message : 'Une erreur est survenue'}`,
         timestamp: Date.now()
       }
       setMessages(prev => [...prev, errorMessage])
-    } finally {
       setLoading(false)
     }
   }

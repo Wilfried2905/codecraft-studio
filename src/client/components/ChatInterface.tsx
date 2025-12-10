@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader, Sparkles, User, Bot } from 'lucide-react'
+import { Send, Loader, Sparkles, User, Bot, Paperclip } from 'lucide-react'
 import { marked } from 'marked'
+import FileUpload from './FileUpload'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -10,12 +11,14 @@ interface Message {
 
 interface ChatInterfaceProps {
   messages: Message[]
-  onSendMessage: (message: string) => void
+  onSendMessage: (message: string, uploadedFiles?: Array<{ name: string; content: string; type: string }>) => void
   loading: boolean
 }
 
 export default function ChatInterface({ messages, onSendMessage, loading }: ChatInterfaceProps) {
   const [input, setInput] = useState('')
+  const [showFileUpload, setShowFileUpload] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ name: string; content: string; type: string }>>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -32,10 +35,16 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
     }
   }, [input])
 
+  const handleFilesUploaded = (files: Array<{ name: string; content: string; type: string }>) => {
+    setUploadedFiles(files)
+  }
+
   const handleSend = () => {
     if (!input.trim() || loading) return
-    onSendMessage(input.trim())
+    onSendMessage(input.trim(), uploadedFiles)
     setInput('')
+    setUploadedFiles([])
+    setShowFileUpload(false)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -148,7 +157,27 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
 
       {/* Input Area */}
       <div className="border-t border-slate-800 p-4 bg-slate-900">
+        {/* File Upload Area (collapsible) */}
+        {showFileUpload && (
+          <div className="mb-4">
+            <FileUpload onFilesUploaded={handleFilesUploaded} />
+          </div>
+        )}
+
         <div className="flex gap-3 items-end">
+          {/* Attach Files Button */}
+          <button
+            onClick={() => setShowFileUpload(!showFileUpload)}
+            className={`p-3 rounded-lg transition-all flex-shrink-0 ${
+              showFileUpload 
+                ? 'bg-primary-500 text-white' 
+                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            }`}
+            title="Upload Word, Excel, PowerPoint, PDF"
+          >
+            <Paperclip className="w-5 h-5" />
+          </button>
+
           <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
@@ -182,6 +211,11 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
         </div>
         
         <p className="text-xs text-slate-500 mt-2">
+          {uploadedFiles.length > 0 && (
+            <span className="text-primary-400 mr-2">
+              📎 {uploadedFiles.length} fichier(s) attaché(s)
+            </span>
+          )}
           Appuyez sur <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-400">Entrée</kbd> pour envoyer, 
           <kbd className="px-1.5 py-0.5 bg-slate-800 rounded text-slate-400 ml-1">Shift + Entrée</kbd> pour un saut de ligne
         </p>
