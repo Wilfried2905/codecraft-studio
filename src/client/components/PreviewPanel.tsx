@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Code, Eye, Smartphone, Tablet, Monitor, RefreshCw, ExternalLink } from 'lucide-react'
+import { Code, Eye, Smartphone, Tablet, Monitor, RefreshCw, ExternalLink, Search, Terminal } from 'lucide-react'
 import MonacoEditor from './MonacoEditor'
+import SearchReplacePanel from './SearchReplacePanel'
+import ConsolePanel from './ConsolePanel'
 
 interface PreviewPanelProps {
   code: string
@@ -15,6 +17,8 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [showConsole, setShowConsole] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   // Update iframe when code changes
@@ -23,6 +27,20 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
       iframeRef.current.srcdoc = code
     }
   }, [code])
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+F: Open search (only in code/split mode)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && (viewMode === 'code' || viewMode === 'split')) {
+        e.preventDefault()
+        setShowSearch(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [viewMode])
 
   const handleRefresh = () => {
     setIsRefreshing(true)
@@ -97,6 +115,21 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
 
         {/* Right: Device Mode & Actions */}
         <div className="flex items-center gap-2">
+          {/* Search Button (visible in code/split mode) */}
+          {(viewMode === 'code' || viewMode === 'split') && (
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              className={`p-2 rounded-lg transition-colors ${
+                showSearch
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-400 hover:bg-slate-800'
+              }`}
+              title="Search & Replace (Ctrl+F)"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          )}
+
           {viewMode !== 'code' && (
             <>
               {/* Device Mode */}
@@ -138,6 +171,19 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
                 </button>
               </div>
 
+              {/* Console Toggle */}
+              <button
+                onClick={() => setShowConsole(!showConsole)}
+                className={`p-2 rounded-lg transition-colors ${
+                  showConsole
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:bg-slate-800'
+                }`}
+                title="Toggle Console"
+              >
+                <Terminal className="w-4 h-4" />
+              </button>
+
               {/* Refresh */}
               <button
                 onClick={handleRefresh}
@@ -161,7 +207,17 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
+        {/* Search & Replace Panel */}
+        {showSearch && onCodeChange && (
+          <SearchReplacePanel
+            code={code}
+            onCodeChange={onCodeChange}
+            isOpen={showSearch}
+            onClose={() => setShowSearch(false)}
+          />
+        )}
+
         {!code && !loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -185,7 +241,7 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
         ) : (
           <>
             {viewMode === 'preview' && (
-              <div className="h-full flex items-center justify-center bg-slate-900 p-4">
+              <div className="h-full flex items-center justify-center bg-slate-900 p-4 relative">
                 <div
                   className="bg-white h-full transition-all duration-300"
                   style={{ 
@@ -200,6 +256,13 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
                     title="Preview"
                   />
                 </div>
+
+                {/* Console Panel */}
+                <ConsolePanel
+                  iframeRef={iframeRef}
+                  isOpen={showConsole}
+                  onToggle={() => setShowConsole(!showConsole)}
+                />
               </div>
             )}
 
@@ -214,7 +277,7 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
                 <div className="w-1/2 border-r border-slate-800">
                   <MonacoEditor />
                 </div>
-                <div className="w-1/2 flex items-center justify-center bg-slate-900 p-4">
+                <div className="w-1/2 flex items-center justify-center bg-slate-900 p-4 relative">
                   <div
                     className="bg-white h-full transition-all duration-300"
                     style={{ 
@@ -229,6 +292,13 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
                       title="Preview"
                     />
                   </div>
+
+                  {/* Console Panel */}
+                  <ConsolePanel
+                    iframeRef={iframeRef}
+                    isOpen={showConsole}
+                    onToggle={() => setShowConsole(!showConsole)}
+                  />
                 </div>
               </div>
             )}
