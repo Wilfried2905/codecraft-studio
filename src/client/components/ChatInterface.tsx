@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Send, Loader, Sparkles, Paperclip } from 'lucide-react'
 import FileUpload from './FileUpload'
 import MessageBubble, { MessageData } from './MessageBubble'
+import { VoiceInputButton } from './VoiceInputButton'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -180,8 +181,16 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
             >
               <Paperclip className="w-4 h-4" />
             </button>
+
+            {/* Voice Input Button */}
+            <VoiceInputButton
+              onTranscript={(text) => {
+                setInput(prev => (prev ? prev + ' ' + text : text))
+              }}
+              className=""
+            />
             
-            {/* Send Button - Stacked below paperclip */}
+            {/* Send Button - Stacked below */}
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
