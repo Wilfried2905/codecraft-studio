@@ -179,8 +179,8 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
             />
           </div>
 
-          {/* Action Buttons - Same size, grouped on the right */}
-          <div className="flex gap-2 items-center flex-shrink-0">
+          {/* Action Buttons - Stacked vertically */}
+          <div className="flex flex-col gap-1 flex-shrink-0">
             {/* Attach Files Button */}
             <button
               onClick={() => setShowFileUpload(!showFileUpload)}
@@ -194,7 +194,7 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
               <Paperclip className="w-4 h-4" />
             </button>
             
-            {/* Send Button - Same size as paperclip */}
+            {/* Send Button - Stacked below paperclip */}
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
