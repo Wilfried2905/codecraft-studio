@@ -5,8 +5,6 @@ type Bindings = {
   ANTHROPIC_API_KEY: string
 }
 
-const api = new Hono<{ Bindings: Bindings }>()
-
 // Helper function to extract text from different file types
 async function extractTextFromFile(file: File): Promise<string> {
   const fileType = file.type
@@ -18,41 +16,75 @@ async function extractTextFromFile(file: File): Promise<string> {
       return await file.text()
     }
 
-    // PDF files - Note: In Cloudflare Workers, we'd need a library like pdf-parse
-    // For now, return a placeholder indicating PDF support is limited
-    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-      return `[PDF File: ${file.name}]\n\nNote: Pour une meilleure analyse PDF, veuillez fournir le contenu en format texte.\nLe fichier PDF a été reçu (${(file.size / 1024).toFixed(2)} KB).`
+    // Word documents (.docx) - Use mammoth (works in Workers)
+    if (fileName.endsWith('.docx') || fileType.includes('wordprocessingml')) {
+      try {
+        const mammoth = await import('mammoth')
+        const arrayBuffer = await file.arrayBuffer()
+        const result = await mammoth.extractRawText({ arrayBuffer })
+        return `# Contenu du fichier Word : ${file.name}\n\n${result.value}\n\n---\nExtrait avec succès (${(file.size / 1024).toFixed(2)} KB)`
+      } catch (error) {
+        console.error('Mammoth error:', error)
+        return `[Word Document: ${file.name}]\n\nErreur lors de l'extraction. Taille: ${(file.size / 1024).toFixed(2)} KB\n\nNote: Le fichier a été reçu mais l'extraction a échoué.`
+      }
     }
 
-    // Word documents (.docx, .doc)
-    if (fileName.endsWith('.docx') || fileName.endsWith('.doc') || 
-        fileType.includes('wordprocessingml') || fileType.includes('msword')) {
-      // In a real implementation, you'd use mammoth.js or similar
-      // For now, try to extract as text
-      const arrayBuffer = await file.arrayBuffer()
-      return `[Word Document: ${file.name}]\n\nNote: Pour une meilleure analyse Word, veuillez copier le contenu en format texte.\nLe document Word a été reçu (${(file.size / 1024).toFixed(2)} KB).`
+    // Old Word (.doc) - Not fully supported in Workers
+    if (fileName.endsWith('.doc') || fileType.includes('msword')) {
+      return `[Word Document .doc: ${file.name}]\n\nNote: Les fichiers .doc (ancien format) ne sont pas entièrement supportés. Veuillez convertir en .docx ou fournir le contenu en texte.\nTaille: ${(file.size / 1024).toFixed(2)} KB`
     }
 
-    // Excel files (.xlsx, .xls)
+    // Excel files (.xlsx, .xls) - Use xlsx (works in Workers)
     if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || 
         fileType.includes('spreadsheetml') || fileType.includes('ms-excel')) {
-      // In a real implementation, you'd use xlsx.js or similar
-      return `[Excel Spreadsheet: ${file.name}]\n\nNote: Pour une meilleure analyse Excel, veuillez fournir les données en format CSV ou texte.\nLe fichier Excel a été reçu (${(file.size / 1024).toFixed(2)} KB).`
+      try {
+        const XLSX = await import('xlsx')
+        const arrayBuffer = await file.arrayBuffer()
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+        
+        let extractedText = `# Contenu du fichier Excel : ${file.name}\n\n`
+        
+        workbook.SheetNames.forEach((sheetName, index) => {
+          const sheet = workbook.Sheets[sheetName]
+          const csvData = XLSX.utils.sheet_to_csv(sheet)
+          extractedText += `## Feuille ${index + 1}: ${sheetName}\n\n\`\`\`csv\n${csvData}\n\`\`\`\n\n`
+        })
+        
+        extractedText += `---\nExtrait avec succès (${(file.size / 1024).toFixed(2)} KB, ${workbook.SheetNames.length} feuille(s))`
+        return extractedText
+      } catch (error) {
+        console.error('XLSX error:', error)
+        return `[Excel Spreadsheet: ${file.name}]\n\nErreur lors de l'extraction. Taille: ${(file.size / 1024).toFixed(2)} KB`
+      }
     }
 
-    // PowerPoint files (.pptx, .ppt)
+    // PDF files - Use pdf-parse (may have limitations in Workers)
+    if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+      try {
+        const pdfParse = await import('pdf-parse')
+        const arrayBuffer = await file.arrayBuffer()
+        const data = await pdfParse(Buffer.from(arrayBuffer))
+        return `# Contenu du fichier PDF : ${file.name}\n\n${data.text}\n\n---\nExtrait avec succès (${(file.size / 1024).toFixed(2)} KB, ${data.numpages} page(s))`
+      } catch (error) {
+        console.error('PDF parse error:', error)
+        return `[PDF File: ${file.name}]\n\nNote: Extraction PDF limitée dans cet environnement. Taille: ${(file.size / 1024).toFixed(2)} KB\n\nErreur: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }
+    }
+
+    // PowerPoint files (.pptx, .ppt) - Limited support
     if (fileName.endsWith('.pptx') || fileName.endsWith('.ppt') || 
         fileType.includes('presentationml') || fileType.includes('ms-powerpoint')) {
-      // In a real implementation, you'd need a PowerPoint parser
-      return `[PowerPoint Presentation: ${file.name}]\n\nNote: Pour une meilleure analyse PowerPoint, veuillez fournir le contenu en format texte.\nLa présentation PowerPoint a été reçue (${(file.size / 1024).toFixed(2)} KB).`
+      // PowerPoint parsing is complex and not well-supported in Workers
+      // For now, we return a helpful message
+      return `[PowerPoint Presentation: ${file.name}]\n\n⚠️ Extraction PowerPoint limitée.\n\nPour une meilleure analyse:\n1. Exportez votre présentation en PDF\n2. Ou copiez le contenu en format texte\n\nTaille: ${(file.size / 1024).toFixed(2)} KB`
     }
 
     // Fallback for unknown types
-    return `[File: ${file.name}]\n\nType: ${fileType || 'unknown'}\nSize: ${(file.size / 1024).toFixed(2)} KB\n\nNote: Ce type de fichier n'est pas encore supporté pour l'extraction de texte. Veuillez fournir le contenu en format texte.`
+    return `[File: ${file.name}]\n\nType: ${fileType || 'unknown'}\nTaille: ${(file.size / 1024).toFixed(2)} KB\n\n⚠️ Type de fichier non supporté pour l'extraction automatique.\n\nFormats supportés:\n- Texte (.txt)\n- Word (.docx)\n- Excel (.xlsx, .xls)\n- PDF (limité)\n\nVeuillez fournir le contenu dans un format supporté.`
 
   } catch (error) {
     console.error('Error extracting text from file:', error)
-    return `[Error processing file: ${file.name}]\n\nUne erreur est survenue lors de l'extraction du contenu.`
+    return `[Erreur: ${file.name}]\n\n❌ Une erreur est survenue lors de l'extraction du contenu.\n\nDétails: ${error instanceof Error ? error.message : 'Erreur inconnue'}\n\nVeuillez réessayer ou fournir le contenu dans un autre format.`
   }
 }
 

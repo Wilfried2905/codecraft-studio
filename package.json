@@ -23,9 +23,12 @@
     "hono": "^4.10.8",
     "jszip": "^3.10.1",
     "lucide-react": "^0.557.0",
+    "mammoth": "^1.11.0",
     "marked": "^17.0.1",
+    "pdf-parse": "^2.4.5",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251210.0",
