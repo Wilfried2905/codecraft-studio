@@ -7,6 +7,7 @@ import ExportManager from './components/ExportManager'
 import TemplateLibrary from './components/TemplateLibrary'
 import LoginModal from './components/LoginModal'
 import ProjectSidebar from './components/ProjectSidebar'
+import ShareProjectModal from './components/ShareProjectModal'
 import { templateManager } from './services/templateManager'
 import { useProject } from './hooks/useProject'
 import { useAuth } from './context/AuthContext'
@@ -49,6 +50,7 @@ export default function AppIDE() {
   const [showExport, setShowExport] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [showProjectSidebar, setShowProjectSidebar] = useState(true)
   const [projectName, setProjectName] = useState('Untitled Project')
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState('')
@@ -256,6 +258,30 @@ export default function AppIDE() {
         isOpen={showLogin}
         onClose={() => setShowLogin(false)}
       />
+
+      {/* Share Project Modal */}
+      {showShare && currentProject && (
+        <ShareProjectModal
+          projectId={currentProject.id}
+          projectName={currentProject.name}
+          isOpen={showShare}
+          onClose={() => setShowShare(false)}
+        />
+      )}
+
+      {/* Share Button (Floating) */}
+      {isAuthenticated && currentProject && generatedCode && (
+        <button
+          onClick={() => setShowShare(true)}
+          className="fixed bottom-6 right-6 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-colors flex items-center gap-2 z-10"
+          title="Partager ce projet"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          Partager
+        </button>
+      )}
     </div>
   )
 }
