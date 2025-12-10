@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/cloudflare-workers'
+import api from './routes/api'
 
 type Bindings = {
   ANTHROPIC_API_KEY: string
@@ -8,6 +9,9 @@ type Bindings = {
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
+
+// API routes (must be before static files)
+app.route('/api', api)
 
 // Serve static files
 app.use('/static/*', serveStatic({ root: './' }))

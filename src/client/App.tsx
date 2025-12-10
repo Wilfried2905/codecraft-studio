@@ -5,6 +5,7 @@ import Header from './components/Header'
 import TemplatesLibrary from './components/TemplatesLibrary'
 import FileManager from './components/FileManager'
 import ExportManager from './components/ExportManager'
+import MonacoEditor from './components/MonacoEditor'
 import { TEMPLATES } from './constants/templates'
 import { AGENTS } from './constants/agents'
 import { extractCode } from './utils/codeExtractor'
@@ -123,19 +124,41 @@ export default function App() {
     setLoading(true)
     
     try {
-      // TODO: Call API route instead of direct Anthropic call
-      // For now, show a placeholder
-      const placeholderHTML = generatePlaceholderHTML(prompt, selectedAgent.name)
+      // Call API route for code generation
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          agent: selectedAgent.id,
+          template: null,
+          style: null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data = await response.json()
       
+      if (!data.success) {
+        throw new Error(data.error || 'Generation failed')
+      }
+
       const assistantMessage = {
         role: 'assistant' as const,
-        content: placeholderHTML,
+        content: data.placeholder 
+          ? `✨ Code généré (mode placeholder)\n\n${data.code}` 
+          : `✨ Code généré par ${selectedAgent.name}\n\n${data.code}`,
         timestamp: Date.now()
       }
       setMessages(prev => [...prev, assistantMessage])
       
       // Extract and display code
-      const code = extractCode(placeholderHTML) || placeholderHTML
+      const code = data.code
       setGeneratedCode(code)
       saveToActiveFile(code)
       
@@ -145,7 +168,7 @@ export default function App() {
         ...prev,
         {
           role: 'assistant',
-          content: `Erreur: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          content: `❌ Erreur: ${error instanceof Error ? error.message : 'Unknown error'}`,
           timestamp: Date.now()
         }
       ])
@@ -257,30 +280,13 @@ export default function App() {
             )}
             
             {editorMode === 'editor' && (
-              <div className="w-full h-full p-4 overflow-auto">
-                <textarea
-                  value={generatedCode}
-                  onChange={e => {
-                    setGeneratedCode(e.target.value)
-                    saveToActiveFile(e.target.value)
-                  }}
-                  className="w-full h-full bg-slate-900 text-white p-4 rounded-lg font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  placeholder="Le code généré apparaîtra ici..."
-                />
-              </div>
+              <MonacoEditor />
             )}
             
             {editorMode === 'split' && (
               <div className="flex h-full">
-                <div className="w-1/2 p-4 overflow-auto border-r border-slate-800">
-                  <textarea
-                    value={generatedCode}
-                    onChange={e => {
-                      setGeneratedCode(e.target.value)
-                      saveToActiveFile(e.target.value)
-                    }}
-                    className="w-full h-full bg-slate-900 text-white p-4 rounded-lg font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  />
+                <div className="w-1/2 border-r border-slate-800">
+                  <MonacoEditor />
                 </div>
                 <div className="w-1/2">
                   <iframe
@@ -339,39 +345,4 @@ export default function App() {
 }
 
 // Placeholder HTML generator (will be replaced with real API call)
-function generatePlaceholderHTML(prompt: string, agentName: string): string {
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeCraft Studio</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen flex items-center justify-center p-8">
-    <div class="max-w-2xl mx-auto text-center">
-        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8">
-            <h1 class="text-4xl font-bold text-white mb-4">
-                🚀 CodeCraft Studio
-            </h1>
-            <p class="text-lg text-purple-200 mb-6">
-                Votre requête: <span class="text-cyan-400">"${prompt.substring(0, 100)}..."</span>
-            </p>
-            <p class="text-white mb-4">
-                Traité par: <span class="text-purple-400 font-semibold">${agentName}</span>
-            </p>
-            <div class="bg-purple-500/20 border border-purple-400/30 rounded-lg p-4 mb-6">
-                <p class="text-purple-100 text-sm">
-                    ⚠️ API Anthropic pas encore connectée. Ce contenu est un placeholder.
-                    <br/>
-                    La vraie génération sera ajoutée dans les prochaines étapes.
-                </p>
-            </div>
-            <p class="text-slate-400 text-sm">
-                Testez les templates, l'interface, et la gestion de fichiers en attendant ! ✨
-            </p>
-        </div>
-    </div>
-</body>
-</html>`
-}
+
