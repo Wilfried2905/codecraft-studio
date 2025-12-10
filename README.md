@@ -1,60 +1,126 @@
-# CodeCraft Studio
+# CodeCraft Studio 🚀
 
-**IDE conversationnel avec système multi-agents pour générer du code**
+**IDE conversationnel avec système multi-agents intelligent et gestion de projets**
 
-🚀 **Application déployée** : https://3000-ihdye4xvkepvg23f15bfe-5c13a017.sandbox.novita.ai/
+🌐 **Application déployée** : https://3000-ihdye4xvkepvg23f15bfe-5c13a017.sandbox.novita.ai/
 
 ---
 
 ## 🎯 Vue d'ensemble
 
-CodeCraft Studio est un IDE conversationnel innovant qui combine:
-- **5 Agents spécialisés** (Design, Code, Test, Doc, Variations)
-- **20+ Templates** pré-configurés (landing pages, dashboards, apps, etc.)
-- **File Manager** complet avec CRUD operations
-- **Preview/Editor/Split** modes pour une expérience optimale
-- **Export** multiple (HTML, ZIP séparé, Project ZIP, Clipboard)
+CodeCraft Studio est un **IDE conversationnel nouvelle génération** qui révolutionne la création d'applications web avec:
+- 🤖 **Système AI intelligent** avec orchestration multi-agents (12 agents spécialisés)
+- 💾 **Gestion de projets** complète avec Supabase (CRUD, auto-save)
+- 🔐 **Authentification** sécurisée avec profils utilisateurs
+- 🔍 **Recherche & Remplacement** avancé (Regex, Ctrl+F/H)
+- 🖥️ **Console JavaScript** intégrée temps réel
+- 📱 **Preview responsive** (Desktop/Tablet/Mobile)
+- 📦 **Export professionnel** (React Project ready-to-deploy)
+- 📚 **Templates dynamiques** avec historique et favoris
 
 ---
 
-## ✨ Fonctionnalités actuellement implémentées
+## ✨ Fonctionnalités complètes
 
-### ✅ **JOUR 1 - Infrastructure & Design System**
-- Stack: Hono + React 18 + Vite + Cloudflare Pages
-- Tailwind CSS avec design system custom (teal/purple/amber)
-- Context API pour state management
-- LocalStorage persistence (files, userMemory)
-- Git repository configuré
+### 🎨 **Sprint 1 - Foundation & Core Features (TERMINÉ)**
+#### Infrastructure & UI
+- ✅ Stack: Hono + React 18 + TypeScript + Vite + Cloudflare Pages
+- ✅ Tailwind CSS avec design system moderne
+- ✅ Context API pour state management global
+- ✅ LocalStorage persistence
+- ✅ Git repository configuré avec .gitignore
 
-### ✅ **JOUR 2 - UI Components**
-- **Header** avec agent selector et actions
-- **Templates Library** modal avec 20+ templates et catégories
-- **File Manager** sidebar avec création/édition/suppression
-- **Export Manager** avec 4 options d'export
-- **Preview Engine** avec modes preview/editor/split
-- **Keyboard Shortcuts** (Ctrl+B, Ctrl+T, Ctrl+E)
+#### Composants UI
+- ✅ HeaderIDE avec dark mode et actions rapides
+- ✅ ChatInterface avec prompts suggérés et upload fichiers
+- ✅ PreviewPanel avec modes (preview/code/split)
+- ✅ Monaco Editor intégration complète
+- ✅ ExportManager avec 4 options d'export
+- ✅ Keyboard Shortcuts modal (touche '?')
 
-### ✅ **JOUR 3 - Monaco Editor + API Routes**
-- **Monaco Editor** intégration complète avec 20+ langages
-- **API Routes** sécurisées (/api/generate, /api/variations)
-- **Anthropic Claude** intégration (Sonnet 4)
-- **Chat amélioré** avec appels API réels
-- **Syntax highlighting** et autocompletion
-- **Mode placeholder** pour développement sans clé API
+#### AI & API
+- ✅ Anthropic Claude 3.5 Sonnet intégration
+- ✅ API Routes sécurisées (/api/generate)
+- ✅ Mode placeholder pour développement sans clé API
+- ✅ Upload fichiers (Office: PDF, Word, Excel, PowerPoint, TXT)
 
-### ✅ **JOUR 4 - Agent Variations Modal**
-- **Modal Variations** pour générer 3 styles différents
-- **Génération parallèle** (Minimal, Modern/Bold, Professional)
-- **Preview on demand** pour chaque variation
-- **Actions rapides** (Utiliser, Copier, Télécharger)
-- **Keyboard shortcut** Ctrl+V
+---
 
-### ✅ **JOUR 5 - Supabase + Deployment**
-- **Guides de setup** complets (Supabase, Deployment)
-- **Structure Supabase** avec RLS et tables
-- **Variables d'environnement** template (.env.example)
-- **Déploiement Cloudflare** via Wrangler ou GitHub
-- **CI/CD** GitHub Actions template
+### 🚀 **Sprint 2 - AI Developer System (TERMINÉ)**
+#### Système intelligent 3 couches
+- ✅ **IntentAnalyzer** - Analyse besoins utilisateur
+- ✅ **ClarificationEngine** - Questions intelligentes
+- ✅ **AgentOrchestrator** - Orchestration 12 agents spécialisés
+
+#### 12 Agents spécialisés
+**Base Agents:**
+- 🏗️ Architect - Architecture et structure
+- 🎨 Designer - UI/UX et esthétique
+- 💻 Developer - Implémentation code
+- 🐛 Tester - Tests et validation
+- 📚 Documenter - Documentation
+
+**Contextual Agents:**
+- ⚙️ Backend Developer - APIs et logique serveur
+- 🔒 Security Expert - Sécurité et auth
+- ⚡ Performance Engineer - Optimisation
+- 🚀 DevOps Engineer - Déploiement
+- 📱 Mobile Developer - Responsive
+- 🔍 SEO Specialist - Référencement
+- ♿ Accessibility Expert - A11y
+
+#### Features avancées
+- ✅ **Système de logs** centralisé (logger.ts)
+- ✅ **Messages enrichis** avec plan d'exécution et statuts agents
+- ✅ **Export React complet** (npm-ready project)
+- ✅ **Templates dynamiques** avec auto-save et import/export
+- ✅ **Historique conversations** avec recherche et reprise
+- ✅ **Raccourcis clavier** (modal helper avec '?')
+
+---
+
+### 🔐 **Sprint 3 - Supabase & Advanced Features (TERMINÉ 100%)**
+
+#### Action 11 - Authentification Supabase ✅
+- ✅ **Supabase Client** configuré avec types TypeScript
+- ✅ **Auth Service** complet (signUp, signIn, signOut, reset)
+- ✅ **AuthContext** React avec session management
+- ✅ **LoginModal** élégant (Login/Signup/Reset password)
+- ✅ **ProfileMenu** avec dropdown et avatar
+- ✅ **Row Level Security** (RLS) sur toutes les tables
+- ✅ **Guide SUPABASE_SETUP.md** détaillé
+
+#### Action 12 - Gestion de Projets ✅
+- ✅ **ProjectService** CRUD complet avec Supabase
+- ✅ **ProjectSidebar** avec liste et recherche
+- ✅ **useProject hook** pour state management
+- ✅ **Auto-save** automatique (2s debounce)
+- ✅ **Recherche/Filtres** par nom et description
+- ✅ **Sidebar collapsible** avec toggle
+- ✅ **Confirmation suppression** projets
+- ✅ **Synchronisation temps réel** avec Supabase
+
+#### Action 13 - Recherche & Remplacement ✅
+- ✅ **SearchReplacePanel** avancé
+- ✅ **Raccourcis clavier** (Ctrl+F, Ctrl+H)
+- ✅ **Support Regex** complet avec validation
+- ✅ **Case sensitive** toggle
+- ✅ **Counter matches** temps réel (3/12)
+- ✅ **Navigation** suivant/précédent (Enter/Shift+Enter)
+- ✅ **Remplacement** simple et multiple
+- ✅ **Hints raccourcis** visibles
+
+#### Action 14 - Console JS Intégrée ✅
+- ✅ **ConsolePanel** temps réel
+- ✅ **Capture logs** iframe (log, warn, error, info)
+- ✅ **Override console methods**
+- ✅ **Syntax highlighting** par type
+- ✅ **Filtrage** par niveau (all/log/warn/error)
+- ✅ **Timestamp** formaté (HH:mm:ss)
+- ✅ **JSON pretty-print** pour objets
+- ✅ **Auto-scroll** vers dernier message
+- ✅ **Capture erreurs** non gérées
+- ✅ **Badge compteur** messages
 
 ---
 
