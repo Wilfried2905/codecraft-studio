@@ -15,7 +15,9 @@ import { ImageGenerationPanel } from './components/ImageGenerationPanel'
 import { CollaborationPanel } from './components/CollaborationPanel'
 import { CollaboratorCursors } from './components/CollaboratorCursors'
 import { CommentsPanel } from './components/CommentsPanel'
+import { TerminalPanel } from './components/TerminalPanel'
 import { templateManager } from './services/templateManager'
+import { useWebContainer } from './hooks/useWebContainer'
 import { useProject } from './hooks/useProject'
 import { useAuth } from './context/AuthContext'
 import { useRealtimeCollaboration } from './hooks/useRealtimeCollaboration'
@@ -351,6 +353,18 @@ export default function AppIDE() {
       {/* Floating Action Buttons */}
       {generatedCode && (
         <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-10">
+          {/* Terminal Button */}
+          <button
+            onClick={() => setShowTerminal(true)}
+            className="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-full shadow-lg transition-colors flex items-center gap-2"
+            title="Terminal interactif"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Terminal
+          </button>
+
           {/* Image Generation Button */}
           <button
             onClick={() => setShowImageGeneration(true)}
