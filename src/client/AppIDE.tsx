@@ -5,6 +5,7 @@ import ChatInterface from './components/ChatInterface'
 import PreviewPanel from './components/PreviewPanel'
 import ExportManager from './components/ExportManager'
 import TemplateLibrary from './components/TemplateLibrary'
+import LoginModal from './components/LoginModal'
 import { templateManager } from './services/templateManager'
 
 interface Message {
@@ -40,6 +41,7 @@ export default function AppIDE() {
   const [loading, setLoading] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
   const [projectName, setProjectName] = useState('Untitled Project')
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState('')
 
@@ -137,6 +139,7 @@ export default function AppIDE() {
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(!darkMode)}
         onExport={() => setShowExport(true)}
+        onLoginClick={() => setShowLogin(true)}
         projectName={projectName}
       />
 
@@ -192,6 +195,18 @@ export default function AppIDE() {
           </div>
         </div>
       )}
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLogin}
+        onClose={() => setShowLogin(false)}
+      />
     </div>
   )
+}
+
+// Missing function definition for handleLoadTemplate
+function handleLoadTemplate(template: any) {
+  // TODO: Implement template loading logic
+  console.log('Loading template:', template)
 }

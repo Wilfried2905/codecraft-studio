@@ -1,265 +1,189 @@
-# 🗄️ Supabase Setup Guide
+# 🔐 Configuration Supabase pour CodeCraft Studio
 
-Ce guide vous aide à configurer Supabase pour CodeCraft Studio afin de sauvegarder vos projets dans le cloud.
+Ce guide vous aide à configurer Supabase pour l'authentification et le stockage des données.
 
----
+## 📋 Étape 1 : Créer un projet Supabase
 
-## 📋 Prérequis
+1. **Aller sur [Supabase](https://supabase.com)** et créer un compte gratuit
+2. **Créer un nouveau projet** :
+   - Nom du projet : `codecraft-studio` (ou votre choix)
+   - Mot de passe de la base de données : **Notez-le bien !**
+   - Région : Choisir la plus proche de vous
 
-- Un compte Supabase (gratuit) : https://supabase.com
+## 🗄️ Étape 2 : Créer les tables
 
----
-
-## 🚀 Étapes d'installation
-
-### 1. Créer un projet Supabase
-
-1. Connectez-vous sur https://supabase.com
-2. Cliquez sur **"New Project"**
-3. Remplissez les informations :
-   - **Name**: `codecraft-studio`
-   - **Database Password**: (choisissez un mot de passe fort)
-   - **Region**: Choisissez le plus proche de vous
-4. Cliquez sur **"Create new project"**
-5. Attendez ~2 minutes que le projet soit créé
-
-### 2. Récupérer les identifiants
-
-1. Dans votre projet Supabase, allez dans **Settings** > **API**
-2. Copiez :
-   - **Project URL** (ex: `https://xxxxx.supabase.co`)
-   - **anon public** key (longue clé commençant par `eyJ...`)
-
-### 3. Créer le schéma de base de données
-
-1. Allez dans **SQL Editor** dans Supabase
-2. Créez une nouvelle requête
-3. Copiez-collez ce SQL :
+1. **Aller dans l'éditeur SQL** : `Database` → `SQL Editor`
+2. **Copier et exécuter ce script SQL** :
 
 ```sql
--- Table: projects
-CREATE TABLE IF NOT EXISTS projects (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+-- Projects table
+CREATE TABLE projects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
-  files JSONB NOT NULL DEFAULT '[]'::jsonb,
-  messages JSONB NOT NULL DEFAULT '[]'::jsonb,
-  settings JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  code TEXT,
+  html TEXT,
+  css TEXT,
+  javascript TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Table: agent_history (pour l'apprentissage)
-CREATE TABLE IF NOT EXISTS agent_history (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+-- Conversations table
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  agent_id TEXT NOT NULL,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  messages JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Templates table
+CREATE TABLE templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT,
   prompt TEXT NOT NULL,
-  response TEXT NOT NULL,
-  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  tags TEXT[] DEFAULT '{}',
+  is_favorite BOOLEAN DEFAULT FALSE,
+  use_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Table: user_memory (préférences utilisateur)
-CREATE TABLE IF NOT EXISTS user_memory (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
-  preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
-  shortcuts JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
-CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC);
-CREATE INDEX IF NOT EXISTS idx_agent_history_user_id ON agent_history(user_id);
-CREATE INDEX IF NOT EXISTS idx_agent_history_agent_id ON agent_history(agent_id);
-
--- Row Level Security (RLS)
+-- Enable Row Level Security (RLS)
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agent_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_memory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for projects
-CREATE POLICY "Users can view their own projects"
-  ON projects FOR SELECT
-  USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own projects" ON projects
+  FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own projects"
-  ON projects FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can insert own projects" ON projects
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own projects"
-  ON projects FOR UPDATE
-  USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own projects" ON projects
+  FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own projects"
-  ON projects FOR DELETE
-  USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own projects" ON projects
+  FOR DELETE USING (auth.uid() = user_id);
 
--- RLS Policies for agent_history
-CREATE POLICY "Users can view their own history"
-  ON agent_history FOR SELECT
-  USING (auth.uid() = user_id);
+-- RLS Policies for conversations
+CREATE POLICY "Users can view own conversations" ON conversations
+  FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own history"
-  ON agent_history FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can insert own conversations" ON conversations
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- RLS Policies for user_memory
-CREATE POLICY "Users can view their own memory"
-  ON user_memory FOR SELECT
-  USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own conversations" ON conversations
+  FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own memory"
-  ON user_memory FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own conversations" ON conversations
+  FOR DELETE USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own memory"
-  ON user_memory FOR UPDATE
-  USING (auth.uid() = user_id);
+-- RLS Policies for templates
+CREATE POLICY "Users can view own templates" ON templates
+  FOR SELECT USING (auth.uid() = user_id);
 
--- Function: Update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+CREATE POLICY "Users can insert own templates" ON templates
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Trigger: Auto-update updated_at
-CREATE TRIGGER update_projects_updated_at
-  BEFORE UPDATE ON projects
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+CREATE POLICY "Users can update own templates" ON templates
+  FOR UPDATE USING (auth.uid() = user_id);
 
-CREATE TRIGGER update_user_memory_updated_at
-  BEFORE UPDATE ON user_memory
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+CREATE POLICY "Users can delete own templates" ON templates
+  FOR DELETE USING (auth.uid() = user_id);
 ```
 
-4. Cliquez sur **"Run"**
-5. Vérifiez que toutes les tables sont créées (aucune erreur)
+3. **Cliquer sur "Run"** pour exécuter le script
 
-### 4. Configurer l'authentification
+## 🔑 Étape 3 : Récupérer les clés API
 
-1. Allez dans **Authentication** > **Providers**
-2. Activez **Email** (déjà activé par défaut)
-3. (Optionnel) Activez **Google**, **GitHub** pour OAuth
+1. **Aller dans les paramètres API** : `Settings` → `API`
+2. **Copier ces 2 valeurs** :
+   - `Project URL` → `VITE_SUPABASE_URL`
+   - `anon public` key → `VITE_SUPABASE_ANON_KEY`
 
-### 5. Ajouter les identifiants au projet
+## ⚙️ Étape 4 : Configuration locale (développement)
 
-**En développement local :**
-
-Créez ou modifiez `.dev.vars` à la racine :
+1. **Créer le fichier `.dev.vars`** à la racine du projet :
 
 ```bash
-# Anthropic API
-ANTHROPIC_API_KEY=votre_cle_anthropic
-
-# Supabase
-VITE_SUPABASE_URL=https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJxxxx...
+# .dev.vars (local development only - NEVER commit this file!)
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
 
-**En production (Cloudflare Pages) :**
+2. **Remplacer les valeurs** par vos vraies clés Supabase
+
+3. **Vérifier que `.dev.vars` est dans `.gitignore`** (déjà fait normalement)
+
+## 🚀 Étape 5 : Configuration production (Cloudflare Pages)
+
+Pour déployer en production, ajouter les secrets Cloudflare :
 
 ```bash
-# Via wrangler CLI
-wrangler pages secret put VITE_SUPABASE_URL
-# Entrez: https://xxxxx.supabase.co
+# Supabase URL
+npx wrangler secret put VITE_SUPABASE_URL
+# Copier/coller: https://your-project-id.supabase.co
 
-wrangler pages secret put VITE_SUPABASE_ANON_KEY
-# Entrez: eyJxxxx...
+# Supabase Anon Key
+npx wrangler secret put VITE_SUPABASE_ANON_KEY
+# Copier/coller: your-anon-key-here
 ```
 
-### 6. Redémarrer l'application
+## ✅ Étape 6 : Tester la configuration
 
+1. **Démarrer le serveur de développement** :
 ```bash
-pm2 restart codecraft-studio-dev
+npm run build
+pm2 start ecosystem.config.cjs
 ```
 
----
+2. **Ouvrir l'application** dans le navigateur
 
-## ✅ Vérification
+3. **Cliquer sur "Connexion"** dans le header
 
-Ouvrez l'application et vérifiez :
+4. **Créer un compte de test** :
+   - Email : `test@example.com`
+   - Mot de passe : `Test123!`
 
-1. **Badge "Cloud"** apparaît dans le header (si configuré)
-2. **Bouton "Save to Cloud"** disponible
-3. **Menu "My Projects"** accessible
-4. Pas d'erreurs dans la console
+5. **Vérifier dans Supabase** :
+   - Aller dans `Authentication` → `Users`
+   - Vous devriez voir votre utilisateur de test
 
----
+## 🔒 Sécurité
 
-## 🔐 Sécurité
+- ✅ **Row Level Security (RLS)** : Activé sur toutes les tables
+- ✅ **Policies** : Chaque utilisateur ne voit que ses propres données
+- ✅ **JWT** : Authentification par token sécurisé
+- ✅ **HTTPS** : Toutes les communications sont chiffrées
 
-- ✅ **RLS activé** : Chaque utilisateur ne voit que ses propres données
-- ✅ **anon key public** : OK d'exposer côté client (RLS protège les données)
-- ❌ **NE JAMAIS exposer** : Service role key (admin)
+## 📚 Ressources
 
----
+- [Documentation Supabase](https://supabase.com/docs)
+- [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
+- [Supabase JS Client](https://supabase.com/docs/reference/javascript/introduction)
 
-## 📊 Structure des données
+## ❓ Problèmes courants
 
-### Table `projects`
-```json
-{
-  "id": "uuid",
-  "user_id": "uuid",
-  "name": "My Project",
-  "description": "Project description",
-  "files": [
-    {
-      "id": "file-1",
-      "name": "index.html",
-      "content": "<!DOCTYPE html>...",
-      "language": "html",
-      "lastModified": 1234567890
-    }
-  ],
-  "messages": [
-    {
-      "role": "user",
-      "content": "Create a landing page",
-      "timestamp": 1234567890
-    }
-  ],
-  "settings": {
-    "activeAgent": "design",
-    "darkMode": true
-  }
-}
-```
+### Erreur "Invalid API key"
+→ Vérifier que vous avez copié la clé `anon public` (pas la clé `service_role`)
+
+### Erreur "Failed to fetch"
+→ Vérifier que le `VITE_SUPABASE_URL` est correct
+
+### L'utilisateur ne peut pas voir ses données
+→ Vérifier que les RLS policies sont bien créées
+
+### Variables d'environnement non détectées
+→ Redémarrer le serveur de développement après modification de `.dev.vars`
 
 ---
 
-## 🆘 Troubleshooting
-
-### Erreur: "Supabase not configured"
-- Vérifiez que `.dev.vars` contient les bonnes valeurs
-- Redémarrez PM2
-
-### Erreur: "Row Level Security policy violation"
-- Vérifiez que vous êtes connecté (auth)
-- Vérifiez que les RLS policies sont créées
-
-### Erreur: "relation does not exist"
-- Exécutez à nouveau le SQL de création des tables
-- Vérifiez dans Supabase > Table Editor
-
----
-
-## 🎓 Pour aller plus loin
-
-- [Supabase Documentation](https://supabase.com/docs)
-- [Row Level Security Guide](https://supabase.com/docs/guides/auth/row-level-security)
-- [Supabase + React](https://supabase.com/docs/guides/getting-started/quickstarts/reactjs)
-
----
-
-**Bon développement ! 🚀**
+**Besoin d'aide ?** Consultez la [documentation Supabase](https://supabase.com/docs) ou ouvrez une issue GitHub.

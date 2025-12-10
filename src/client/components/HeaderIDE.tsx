@@ -1,9 +1,11 @@
 import { Code2, Download, Settings, Sun, Moon } from 'lucide-react'
+import ProfileMenu from './ProfileMenu'
 
 interface HeaderIDEProps {
   darkMode: boolean
   onDarkModeToggle: () => void
   onExport: () => void
+  onLoginClick: () => void
   projectName?: string
 }
 
@@ -11,6 +13,7 @@ export default function HeaderIDE({
   darkMode,
   onDarkModeToggle,
   onExport,
+  onLoginClick,
   projectName = 'Untitled Project'
 }: HeaderIDEProps) {
   return (
@@ -62,6 +65,9 @@ export default function HeaderIDE({
         >
           <Settings className="w-5 h-5 text-slate-400 group-hover:text-white" />
         </button>
+
+        {/* Profile Menu */}
+        <ProfileMenu onLoginClick={onLoginClick} />
       </div>
     </header>
   )

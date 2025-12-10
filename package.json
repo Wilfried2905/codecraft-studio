@@ -21,6 +21,7 @@
   "dependencies": {
     "@hono/vite-cloudflare-pages": "^0.4.3",
     "@monaco-editor/react": "^4.7.0",
+    "@supabase/supabase-js": "^2.87.1",
     "@types/react-syntax-highlighter": "^15.5.13",
     "file-saver": "^2.0.5",
     "hono": "^4.10.8",
