@@ -165,19 +165,7 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
         )}
 
         <div className="flex gap-2 items-end">
-          {/* Attach Files Button - Compact */}
-          <button
-            onClick={() => setShowFileUpload(!showFileUpload)}
-            className={`p-2 rounded-lg transition-all flex-shrink-0 ${
-              showFileUpload 
-                ? 'bg-primary-500 text-white' 
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-            }`}
-            title="Upload Word, Excel, PowerPoint, PDF"
-          >
-            <Paperclip className="w-4 h-4" />
-          </button>
-
+          {/* Textarea - Takes all available space */}
           <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
@@ -190,20 +178,36 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
               disabled={loading}
             />
           </div>
-          
-          {/* Send Button - Icon Only */}
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            className="p-3 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center flex-shrink-0"
-            title={loading ? "Création en cours..." : "Envoyer"}
-          >
-            {loading ? (
-              <Loader className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
+
+          {/* Action Buttons - Same size, grouped on the right */}
+          <div className="flex gap-2 items-center flex-shrink-0">
+            {/* Attach Files Button */}
+            <button
+              onClick={() => setShowFileUpload(!showFileUpload)}
+              className={`p-2 rounded-lg transition-all ${
+                showFileUpload 
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+              }`}
+              title="Upload Word, Excel, PowerPoint, PDF"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+            
+            {/* Send Button - Same size as paperclip */}
+            <button
+              onClick={handleSend}
+              disabled={loading || !input.trim()}
+              className="p-2 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center"
+              title={loading ? "Création en cours..." : "Envoyer"}
+            >
+              {loading ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </button>
+          </div>
         </div>
         
         <p className="text-xs text-slate-500 mt-2">
