@@ -38,23 +38,6 @@ export default function AppIDE() {
   const [loading, setLoading] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [projectName, setProjectName] = useState('Untitled Project')
-  const [showDebug, setShowDebug] = useState(false)
-  const [debugLogs, setDebugLogs] = useState<Log[]>([])
-
-  // Écouter les logs du système
-  useEffect(() => {
-    const setupLogger = async () => {
-      const { logger } = await import('../services/logger')
-      const handleLog = (log: Log) => {
-        setDebugLogs(prev => [...prev, log])
-      }
-
-      logger.addListener(handleLog)
-      return () => logger.removeListener(handleLog)
-    }
-
-    setupLogger()
-  }, [])
 
   // Apply dark mode
   useEffect(() => {
@@ -173,13 +156,6 @@ export default function AppIDE() {
           />
         </div>
       </div>
-
-      {/* Debug Panel */}
-      <DebugPanel
-        logs={debugLogs as any}
-        isOpen={showDebug}
-        onToggle={() => setShowDebug(!showDebug)}
-      />
 
       {/* Export Modal */}
       {showExport && (
