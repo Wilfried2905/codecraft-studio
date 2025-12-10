@@ -4,6 +4,8 @@ import HeaderIDE from './components/HeaderIDE'
 import ChatInterface from './components/ChatInterface'
 import PreviewPanel from './components/PreviewPanel'
 import ExportManager from './components/ExportManager'
+import TemplateLibrary from './components/TemplateLibrary'
+import { templateManager } from './services/templateManager'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -37,7 +39,9 @@ export default function AppIDE() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [showExport, setShowExport] = useState(false)
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
   const [projectName, setProjectName] = useState('Untitled Project')
+  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState('')
 
   // Apply dark mode
   useEffect(() => {
@@ -156,6 +160,14 @@ export default function AppIDE() {
           />
         </div>
       </div>
+
+      {/* Template Library Modal */}
+      {showTemplateLibrary && (
+        <TemplateLibrary
+          onSelectTemplate={handleLoadTemplate}
+          onClose={() => setShowTemplateLibrary(false)}
+        />
+      )}
 
       {/* Export Modal */}
       {showExport && (
