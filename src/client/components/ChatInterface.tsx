@@ -164,18 +164,18 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
           </div>
         )}
 
-        <div className="flex gap-3 items-end">
-          {/* Attach Files Button */}
+        <div className="flex gap-2 items-end">
+          {/* Attach Files Button - Compact */}
           <button
             onClick={() => setShowFileUpload(!showFileUpload)}
-            className={`p-3 rounded-lg transition-all flex-shrink-0 ${
+            className={`p-2 rounded-lg transition-all flex-shrink-0 ${
               showFileUpload 
                 ? 'bg-primary-500 text-white' 
                 : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
             }`}
             title="Upload Word, Excel, PowerPoint, PDF"
           >
-            <Paperclip className="w-5 h-5" />
+            <Paperclip className="w-4 h-4" />
           </button>
 
           <div className="flex-1 relative">
@@ -191,21 +191,17 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
             />
           </div>
           
+          {/* Send Button - Icon Only */}
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="px-6 py-3 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all font-medium flex items-center gap-2 flex-shrink-0"
+            className="p-3 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center flex-shrink-0"
+            title={loading ? "Création en cours..." : "Envoyer"}
           >
             {loading ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                <span>Création...</span>
-              </>
+              <Loader className="w-5 h-5 animate-spin" />
             ) : (
-              <>
-                <Send className="w-5 h-5" />
-                <span>Créer</span>
-              </>
+              <Send className="w-5 h-5" />
             )}
           </button>
         </div>
