@@ -4,6 +4,7 @@ import HeaderIDE from './components/HeaderIDE'
 import ChatInterface from './components/ChatInterface'
 import PreviewPanel from './components/PreviewPanel'
 import ExportManager from './components/ExportManager'
+import DebugPanel from './components/DebugPanel'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -25,6 +26,18 @@ export default function AppIDE() {
   const [loading, setLoading] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [projectName, setProjectName] = useState('Untitled Project')
+  const [showDebug, setShowDebug] = useState(false)
+  const [debugLogs, setDebugLogs] = useState<Log[]>([])
+
+  // Écouter les logs du système
+  useEffect(() => {
+    const handleLog = (log: Log) => {
+      setDebugLogs(prev => [...prev, log])
+    }
+
+    logger.addListener(handleLog)
+    return () => logger.removeListener(handleLog)
+  }, [])
 
   // Apply dark mode
   useEffect(() => {
@@ -56,8 +69,24 @@ export default function AppIDE() {
       const { AIDeveloper } = await import('../services/aiDeveloper')
       const aiDeveloper = new AIDeveloper()
 
+      // Log start
+      const startTime = Date.now()
+      setDebugLogs(prev => [...prev, {
+        type: 'start',
+        message: 'Démarrage du traitement AI Developer',
+        timestamp: Date.now()
+      }])
+
       // Process user request with AI Developer
       const response = await aiDeveloper.process(message, uploadedFiles)
+
+      // Log completion
+      setDebugLogs(prev => [...prev, {
+        type: 'complete',
+        message: `Traitement terminé en ${Date.now() - startTime}ms`,
+        timestamp: Date.now(),
+        duration: Date.now() - startTime
+      }])
 
       // Add assistant response
       const assistantMessage: Message = {
@@ -104,6 +133,15 @@ export default function AppIDE() {
         projectName={projectName}
       />
 
+      {/* Debug Button */}
+      <button
+        onClick={() => setShowDebug(!showDebug)}
+        className="fixed bottom-6 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all"
+        title="Ouvrir le panneau de debug"
+      >
+        🐛
+      </button>
+
       {/* Main Content: Chat + Preview Split */}
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Interface (Left 30%) */}
@@ -124,6 +162,14 @@ export default function AppIDE() {
           />
         </div>
       </div>
+
+      {/* Debug Panel */}
+      {showDebug && (
+        <DebugPanel
+          logs={debugLogs}
+          onClose={() => setShowDebug(false)}
+        />
+      )}
 
       {/* Export Modal */}
       {showExport && (

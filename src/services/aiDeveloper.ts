@@ -3,11 +3,12 @@
  * Orchestre l'analyse, la clarification et l'exécution des agents
  */
 
-import { IntentAnalyzer, Requirements, UserIntent } from './intentAnalyzer';
-import { ClarificationEngine } from './clarificationEngine';
-import { AgentOrchestrator, AgentResult } from './agentOrchestrator';
-import { logError, formatErrorMessage, ValidationError } from './errorHandler';
-import { validateProject, generateValidationReport } from './codeValidator';
+import { IntentAnalyzer, Requirements, UserIntent } from './intentAnalyzer'
+import { ClarificationEngine } from './clarificationEngine'
+import { AgentOrchestrator, AgentResult } from './agentOrchestrator'
+import { logError, formatErrorMessage, ValidationError } from './errorHandler'
+import { validateProject, generateValidationReport } from './codeValidator'
+import { logger } from './logger'
 
 export interface DeveloperResponse {
   type: 'clarification' | 'execution' | 'error';
@@ -276,9 +277,12 @@ Que voulez-vous créer aujourd'hui ? 🚀`;
   /**
    * Réinitialise l'état de la conversation
    */
+  /**
+   * Réinitialise l'état de la conversation
+   */
   resetState(): void {
     this.conversationState = {
       awaitingClarification: false,
-    };
+    }
   }
 }

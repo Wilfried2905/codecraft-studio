@@ -2,7 +2,8 @@
  * Agent Orchestrator - Orchestre l'exécution intelligente et parallèle des agents
  */
 
-import { Requirements } from './intentAnalyzer';
+import { Requirements } from './intentAnalyzer'
+import { logger } from './logger'
 
 export interface Agent {
   id: string;
@@ -317,13 +318,23 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
       });
     } else {
       // Exécution séquentielle
+      logger.info('🔗 Exécution séquentielle des agents')
       for (const agent of plan.selectedAgents) {
-        const result = await this.executeAgent(agent, requirements, apiUrl);
-        results.push(result);
+        const result = await this.executeAgent(agent, requirements, apiUrl)
+        results.push(result)
       }
     }
 
-    return results;
+    const successCount = results.filter(r => r.success).length
+    logger.success(`✅ Exécution terminée: ${successCount}/${results.length} agents réussis`, {
+      results: results.map(r => ({
+        agent: r.agentName,
+        success: r.success,
+        duration: r.executionTime
+      }))
+    })
+
+    return results
   }
 
   /**
@@ -334,13 +345,18 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
     requirements: Requirements,
     apiUrl: string
   ): Promise<AgentResult> {
-    const startTime = Date.now();
+    const startTime = Date.now()
+
+    logger.logAgent(agent.id, agent.name, `🔄 Démarrage de l'exécution...`)
 
     try {
       // Construire le prompt pour l'agent
-      const prompt = this.buildPromptForAgent(agent, requirements);
+      const prompt = this.buildPromptForAgent(agent, requirements)
+
+      logger.logAgent(agent.id, agent.name, `📝 Prompt construit (${prompt.length} caractères)`)
 
       // Appel API
+      logger.logAgent(agent.id, agent.name, `🌐 Appel API...`)
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -350,14 +366,22 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
           agentName: agent.name,
           systemPrompt: agent.systemPrompt,
         }),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        throw new Error(`API Error: ${response.status}`)
       }
 
-      const data = await response.json();
-      const executionTime = Date.now() - startTime;
+      const data = await response.json()
+      const executionTime = Date.now() - startTime
+
+      logger.logAgent(
+        agent.id,
+        agent.name,
+        `✅ Exécution réussie`,
+        { outputLength: (data.code || data.response || '').length },
+        executionTime
+      )
 
       return {
         agentId: agent.id,
@@ -365,15 +389,26 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
         output: data.code || data.response || '',
         executionTime,
         success: true,
-      };
+      }
     } catch (error) {
+      const executionTime = Date.now() - startTime
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      logger.logAgent(
+        agent.id,
+        agent.name,
+        `❌ Erreur: ${errorMessage}`,
+        { error },
+        executionTime
+      )
+
       return {
         agentId: agent.id,
         agentName: agent.name,
-        output: `Erreur: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        executionTime: Date.now() - startTime,
+        output: `Erreur: ${errorMessage}`,
+        executionTime,
         success: false,
-      };
+      }
     }
   }
 
