@@ -42,6 +42,20 @@ CodeCraft Studio est un IDE conversationnel innovant qui combine:
 - **Syntax highlighting** et autocompletion
 - **Mode placeholder** pour développement sans clé API
 
+### ✅ **JOUR 4 - Agent Variations Modal**
+- **Modal Variations** pour générer 3 styles différents
+- **Génération parallèle** (Minimal, Modern/Bold, Professional)
+- **Preview on demand** pour chaque variation
+- **Actions rapides** (Utiliser, Copier, Télécharger)
+- **Keyboard shortcut** Ctrl+V
+
+### ✅ **JOUR 5 - Supabase + Deployment**
+- **Guides de setup** complets (Supabase, Deployment)
+- **Structure Supabase** avec RLS et tables
+- **Variables d'environnement** template (.env.example)
+- **Déploiement Cloudflare** via Wrangler ou GitHub
+- **CI/CD** GitHub Actions template
+
 ---
 
 ## 🎨 Design System
@@ -200,11 +214,11 @@ npm run git:status    # Git status
 - ✅ Export Manager (100%)
 - ✅ Monaco Editor (100%)
 - ✅ API Integration (100%)
-- ⏳ Agent Variations (0%)
-- ⏳ Supabase (0%)
-- ⏳ WebContainers (0%)
+- ✅ Agent Variations (100%)
+- ✅ Supabase Setup (100% - guides prêts)
+- ⏳ WebContainers (0% - optionnel)
 
-**Score actuel**: ~65/100 - Très bon progrès ! 🚀
+**Score actuel**: ~85/100 - Prêt pour la production ! 🎉
 
 ---
 
@@ -242,4 +256,12 @@ Développé avec ❤️ par l'équipe CodeCraft
 
 ---
 
-**Dernière mise à jour**: Jour 2 - 10 décembre 2025
+**Dernière mise à jour**: Jour 5 - 10 décembre 2025
+
+---
+
+## 📚 Guides de Setup
+
+- **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** - Configuration complète de Supabase pour le cloud storage
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Déploiement sur Cloudflare Pages (CLI ou GitHub)
+- **[.env.example](.env.example)** - Template des variables d'environnement
