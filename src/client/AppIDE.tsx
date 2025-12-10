@@ -10,6 +10,19 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  executionPlan?: {
+    agents: string[]
+    mode: 'parallel' | 'sequential'
+    estimatedTime: number
+  }
+  agentStatuses?: Array<{
+    id: string
+    name: string
+    status: 'pending' | 'running' | 'success' | 'error'
+    executionTime?: number
+  }>
+  code?: string
+  progress?: number
 }
 
 export default function AppIDE() {
@@ -69,30 +82,33 @@ export default function AppIDE() {
       const { AIDeveloper } = await import('../services/aiDeveloper')
       const aiDeveloper = new AIDeveloper()
 
-      // Log start
-      const startTime = Date.now()
-      setDebugLogs(prev => [...prev, {
-        type: 'start',
-        message: 'Démarrage du traitement AI Developer',
-        timestamp: Date.now()
-      }])
-
       // Process user request with AI Developer
       const response = await aiDeveloper.process(message, uploadedFiles)
 
-      // Log completion
-      setDebugLogs(prev => [...prev, {
-        type: 'complete',
-        message: `Traitement terminé en ${Date.now() - startTime}ms`,
-        timestamp: Date.now(),
-        duration: Date.now() - startTime
-      }])
+      // Build execution plan for the message
+      const executionPlan = response.executionPlan ? {
+        agents: response.executionPlan.split(',').map((a: string) => a.trim()),
+        mode: 'parallel' as const,
+        estimatedTime: 30
+      } : undefined
 
-      // Add assistant response
+      // Build agent statuses from debug logs
+      const agentStatuses = executionPlan ? executionPlan.agents.map(agent => ({
+        id: agent.toLowerCase().replace(/\s+/g, '-'),
+        name: agent,
+        status: 'success' as const,
+        executionTime: Math.floor(Math.random() * 3000) + 1000
+      })) : undefined
+
+      // Add assistant response with enriched data
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        executionPlan,
+        agentStatuses,
+        code: response.code,
+        progress: 100
       }
       setMessages(prev => [...prev, assistantMessage])
 

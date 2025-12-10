@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader, Sparkles, User, Bot, Paperclip } from 'lucide-react'
-import { marked } from 'marked'
+import { Send, Loader, Sparkles, Paperclip } from 'lucide-react'
 import FileUpload from './FileUpload'
+import MessageBubble, { MessageData } from './MessageBubble'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  executionPlan?: any
+  agentStatuses?: any[]
+  code?: string
+  progress?: number
 }
 
 interface ChatInterfaceProps {
@@ -93,52 +97,35 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
         ) : (
           <>
             {messages.map((message, index) => (
-              <div
+              <MessageBubble
                 key={index}
-                className={`flex gap-4 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
-                )}
-                
-                <div
-                  className={`max-w-[80%] rounded-xl px-4 py-3 ${
-                    message.role === 'user'
-                      ? 'bg-gradient-to-r from-primary-500 to-secondary-600 text-white'
-                      : 'bg-slate-800 text-slate-100'
-                  }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <div
-                      className="prose prose-invert prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{
-                        __html: marked(message.content, { breaks: true })
-                      }}
-                    />
-                  ) : (
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  )}
-                  <div className="text-xs opacity-60 mt-2">
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-                
-                {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-slate-300" />
-                  </div>
-                )}
-              </div>
+                message={message as MessageData}
+                onCopy={() => {
+                  if (message.code) {
+                    navigator.clipboard.writeText(message.code)
+                  }
+                }}
+                onDownload={() => {
+                  if (message.code) {
+                    const blob = new Blob([message.code], { type: 'text/html' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'generated-app.html'
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }
+                }}
+                onVariations={() => {
+                  console.log('Generate variations - TODO')
+                }}
+              />
             ))}
             
             {loading && (
               <div className="flex gap-4 justify-start">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center flex-shrink-0 animate-pulse">
+                  🤖
                 </div>
                 <div className="bg-slate-800 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2">
