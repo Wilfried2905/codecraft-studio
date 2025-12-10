@@ -19,6 +19,16 @@ export {
   safeJsonParse,
   validate
 } from './errorHandler'
+export {
+  validateHTML,
+  validateCSS,
+  validateJavaScript,
+  validateProject,
+  sanitizeHTML,
+  generateValidationReport
+} from './codeValidator'
+
+export type { ValidationResult } from './codeValidator'
 
 export type { UserIntent, Requirements } from './intentAnalyzer'
 export type { ClarificationResponse } from './clarificationEngine'

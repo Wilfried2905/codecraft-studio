@@ -7,6 +7,7 @@ import { IntentAnalyzer, Requirements, UserIntent } from './intentAnalyzer';
 import { ClarificationEngine } from './clarificationEngine';
 import { AgentOrchestrator, AgentResult } from './agentOrchestrator';
 import { logError, formatErrorMessage, ValidationError } from './errorHandler';
+import { validateProject, generateValidationReport } from './codeValidator';
 
 export interface DeveloperResponse {
   type: 'clarification' | 'execution' | 'error';
@@ -146,13 +147,20 @@ export class AIDeveloper {
     // Fusionner les résultats
     const generatedCode = this.agentOrchestrator.mergeResults(agentResults, requirements);
 
+    // Valider le code généré
+    const validationResult = validateProject(generatedCode);
+    const validationReport = generateValidationReport(validationResult);
+
     // Générer le message de réponse
     const responseMessage = this.generateExecutionMessage(agentResults, requirements);
 
+    // Ajouter le rapport de validation au message
+    const finalMessage = planMessage + '\n\n' + responseMessage + '\n\n' + validationReport;
+
     return {
       type: 'execution',
-      message: planMessage + '\n\n' + responseMessage,
-      code: generatedCode,
+      message: finalMessage,
+      code: validationResult.sanitized || generatedCode,
       requirements,
       agentResults,
       executionPlan: planMessage,
