@@ -6,7 +6,11 @@ import PreviewPanel from './components/PreviewPanel'
 import ExportManager from './components/ExportManager'
 import TemplateLibrary from './components/TemplateLibrary'
 import LoginModal from './components/LoginModal'
+import ProjectSidebar from './components/ProjectSidebar'
 import { templateManager } from './services/templateManager'
+import { useProject } from './hooks/useProject'
+import { useAuth } from './context/AuthContext'
+import type { Project } from './services/supabaseClient'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -37,11 +41,15 @@ export default function AppIDE() {
     activeFile
   } = useApp()
 
+  const { isAuthenticated } = useAuth()
+  const { currentProject, setCurrentProject, updateProjectCode, updateProjectName, createNewProject } = useProject()
+  
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
+  const [showProjectSidebar, setShowProjectSidebar] = useState(true)
   const [projectName, setProjectName] = useState('Untitled Project')
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState('')
 
@@ -114,6 +122,11 @@ export default function AppIDE() {
           const appType = response.requirements.appType
           setProjectName(appType.charAt(0).toUpperCase() + appType.slice(1).replace('-', ' '))
         }
+
+        // Auto-save to project if authenticated
+        if (isAuthenticated && currentProject) {
+          updateProjectCode(response.code)
+        }
       }
 
       setLoading(false)
@@ -132,6 +145,32 @@ export default function AppIDE() {
     }
   }
 
+  // Handle project selection
+  const handleSelectProject = (project: Project) => {
+    setCurrentProject(project)
+    setProjectName(project.name)
+    if (project.code) {
+      setGeneratedCode(project.code)
+    }
+  }
+
+  // Handle new project
+  const handleNewProject = async () => {
+    const project = await createNewProject('Nouveau Projet')
+    if (project) {
+      setProjectName(project.name)
+      setGeneratedCode('')
+      setMessages([])
+    }
+  }
+
+  // Sync project name changes
+  useEffect(() => {
+    if (currentProject && projectName !== currentProject.name) {
+      updateProjectName(projectName)
+    }
+  }, [projectName, currentProject])
+
   return (
     <div className={`h-screen flex flex-col ${darkMode ? 'dark' : ''} bg-slate-950`}>
       {/* Header */}
@@ -140,11 +179,22 @@ export default function AppIDE() {
         onDarkModeToggle={() => setDarkMode(!darkMode)}
         onExport={() => setShowExport(true)}
         onLoginClick={() => setShowLogin(true)}
-        projectName={projectName}
+        projectName={currentProject?.name || projectName}
       />
 
-      {/* Main Content: Chat + Preview Split */}
+      {/* Main Content: Sidebar + Chat + Preview */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Project Sidebar */}
+        {isAuthenticated && (
+          <ProjectSidebar
+            currentProjectId={currentProject?.id || null}
+            onSelectProject={handleSelectProject}
+            onNewProject={handleNewProject}
+            isCollapsed={!showProjectSidebar}
+            onToggleCollapse={() => setShowProjectSidebar(!showProjectSidebar)}
+          />
+        )}
+
         {/* Chat Interface (Left 30%) */}
         <div className="w-[30%] border-r border-slate-800">
           <ChatInterface
@@ -155,11 +205,16 @@ export default function AppIDE() {
         </div>
 
         {/* Preview Panel (Right 70%) */}
-        <div className="w-[70%]">
+        <div className="flex-1">
           <PreviewPanel
             code={generatedCode}
             loading={loading}
-            onCodeChange={(newCode) => setGeneratedCode(newCode)}
+            onCodeChange={(newCode) => {
+              setGeneratedCode(newCode)
+              if (isAuthenticated && currentProject) {
+                updateProjectCode(newCode)
+              }
+            }}
           />
         </div>
       </div>
