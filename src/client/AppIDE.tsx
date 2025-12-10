@@ -74,6 +74,7 @@ export default function AppIDE() {
   const [loading, setLoading] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
+  const [showComponentLibrary, setShowComponentLibrary] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [showVersionHistory, setShowVersionHistory] = useState(false)
@@ -350,9 +351,33 @@ export default function AppIDE() {
         }}
       />
 
+      {/* Component Library Panel */}
+      <ComponentLibraryPanel
+        isOpen={showComponentLibrary}
+        onClose={() => setShowComponentLibrary(false)}
+        onInsertComponent={(code) => {
+          setGeneratedCode(prev => prev + '\n\n' + code);
+          if (isAuthenticated && currentProject) {
+            updateProjectCode(generatedCode + '\n\n' + code);
+          }
+        }}
+      />
+
       {/* Floating Action Buttons */}
       {generatedCode && (
         <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-10">
+          {/* Component Library Button */}
+          <button
+            onClick={() => setShowComponentLibrary(true)}
+            className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-colors flex items-center gap-2"
+            title="Component Library"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            Components
+          </button>
+
           {/* Terminal Button */}
           <button
             onClick={() => setShowTerminal(true)}
@@ -451,3 +476,4 @@ function handleLoadTemplate(template: any) {
   // TODO: Implement template loading logic
   console.log('Loading template:', template)
 }
+
