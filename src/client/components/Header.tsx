@@ -1,4 +1,4 @@
-import { Code2, LayoutGrid, FolderOpen, Sun, Moon, Download } from 'lucide-react'
+import { Code2, LayoutGrid, FolderOpen, Sun, Moon, Download, Sparkles } from 'lucide-react'
 import { AGENTS } from '../constants/agents'
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   darkMode: boolean
   onDarkModeToggle: () => void
   onTemplatesOpen: () => void
+  onVariationsOpen: () => void
   onFilesToggle: () => void
   showFiles: boolean
   onExportClick: () => void
@@ -19,6 +20,7 @@ export default function Header({
   darkMode,
   onDarkModeToggle,
   onTemplatesOpen,
+  onVariationsOpen,
   onFilesToggle,
   showFiles,
   onExportClick,
@@ -72,6 +74,16 @@ export default function Header({
           <span className="bg-white/20 px-2 py-0.5 rounded text-xs">
             {templatesCount}
           </span>
+        </button>
+        
+        {/* Variations Button */}
+        <button
+          onClick={onVariationsOpen}
+          className="px-4 py-2 bg-gradient-to-r from-secondary-500 to-accent-500 text-white rounded-lg hover:opacity-90 transition-all flex items-center gap-2 font-medium"
+          title="Générer 3 variations de style (Ctrl+V)"
+        >
+          <Sparkles className="w-5 h-5" />
+          Variations
         </button>
         
         {/* Toggle Files Sidebar */}

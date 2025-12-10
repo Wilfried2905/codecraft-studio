@@ -6,6 +6,7 @@ import TemplatesLibrary from './components/TemplatesLibrary'
 import FileManager from './components/FileManager'
 import ExportManager from './components/ExportManager'
 import MonacoEditor from './components/MonacoEditor'
+import AgentVariations from './components/AgentVariations'
 import { TEMPLATES } from './constants/templates'
 import { AGENTS } from './constants/agents'
 import { extractCode } from './utils/codeExtractor'
@@ -34,9 +35,11 @@ export default function App() {
   // Local UI state
   const [showTemplates, setShowTemplates] = useState(false)
   const [showFiles, setShowFiles] = useState(true)
+  const [showVariations, setShowVariations] = useState(false)
   const [userInput, setUserInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [editorMode, setEditorMode] = useState<'preview' | 'editor' | 'split'>('preview')
+  const [lastPrompt, setLastPrompt] = useState('')
   
   // Refs
   const previewRef = useRef<HTMLIFrameElement>(null)
@@ -117,6 +120,9 @@ export default function App() {
     const selectedAgent = AGENTS.find(a => a.id === activeAgent)
     if (!selectedAgent) return
     
+    // Save prompt for variations
+    setLastPrompt(prompt)
+    
     // Add user message
     const newMessage = { role: 'user' as const, content: prompt, timestamp: Date.now() }
     setMessages(prev => [...prev, newMessage])
@@ -177,6 +183,20 @@ export default function App() {
     }
   }
   
+  // Handle variation selection
+  const handleSelectVariation = (code: string, style: string) => {
+    setGeneratedCode(code)
+    saveToActiveFile(code)
+    setMessages(prev => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: `✨ Variation "${style}" appliquée`,
+        timestamp: Date.now()
+      }
+    ])
+  }
+  
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyboard = (e: KeyboardEvent) => {
@@ -191,6 +211,10 @@ export default function App() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
         e.preventDefault()
         setEditorMode(prev => (prev === 'preview' ? 'editor' : 'preview'))
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault()
+        setShowVariations(true)
       }
     }
     
@@ -207,6 +231,7 @@ export default function App() {
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(!darkMode)}
         onTemplatesOpen={() => setShowTemplates(true)}
+        onVariationsOpen={() => setShowVariations(true)}
         onFilesToggle={() => setShowFiles(!showFiles)}
         showFiles={showFiles}
         onExportClick={() => {}}
@@ -339,6 +364,14 @@ export default function App() {
         isOpen={showTemplates}
         onClose={() => setShowTemplates(false)}
         onSelectTemplate={handleTemplateSelect}
+      />
+      
+      <AgentVariations
+        isOpen={showVariations}
+        onClose={() => setShowVariations(false)}
+        currentCode={generatedCode}
+        currentPrompt={lastPrompt}
+        onSelectVariation={handleSelectVariation}
       />
     </div>
   )
