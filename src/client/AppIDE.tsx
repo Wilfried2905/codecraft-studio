@@ -195,7 +195,11 @@ export default function AppIDE() {
               </button>
             </div>
             <div className="p-6">
-              <ExportManager files={files} currentCode={generatedCode} />
+              <ExportManager 
+                files={files} 
+                currentCode={generatedCode}
+                projectName={projectName}
+              />
             </div>
           </div>
         </div>
