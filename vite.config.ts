@@ -1,17 +1,24 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Dev mode: Pure React with Vite
-// Build mode: Will be handled by Hono plugin
-const isDev = process.env.NODE_ENV !== 'production'
-
 export default defineConfig({
   plugins: [react()],
   root: './',
   server: {
     port: 3000,
     host: '0.0.0.0',
-    hmr: true
+    hmr: {
+      host: '3000-ihdye4xvkepvg23f15bfe-5c13a017.sandbox.novita.ai',
+      protocol: 'wss'
+    },
+    // Allow access from sandbox URLs
+    allowedHosts: [
+      '3000-ihdye4xvkepvg23f15bfe-5c13a017.sandbox.novita.ai',
+      '.sandbox.novita.ai',
+      'localhost'
+    ],
+    // Disable host check for development
+    strictPort: false
   },
   build: {
     outDir: 'dist-client',
