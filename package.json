@@ -1,19 +1,42 @@
 {
-  "name": "webapp",
+  "name": "codecraft-studio",
+  "version": "1.0.0",
+  "description": "CodeCraft Studio - IDE conversationnel avec système multi-agents",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "wrangler pages dev",
-    "deploy": "npm run build && wrangler pages deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "preview": "wrangler pages dev dist",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name codecraft-studio",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
+    "test": "curl http://localhost:3000",
+    "git:commit": "git add . && git commit -m",
+    "git:status": "git status",
+    "git:log": "git log --oneline"
   },
   "dependencies": {
-    "hono": "^4.10.8"
+    "@hono/vite-cloudflare-pages": "^0.4.3",
+    "@monaco-editor/react": "^4.7.0",
+    "file-saver": "^2.0.5",
+    "hono": "^4.10.8",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.557.0",
+    "marked": "^17.0.1",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251210.0",
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3",
     "vite": "^6.3.5",
     "wrangler": "^4.4.0"
   }
