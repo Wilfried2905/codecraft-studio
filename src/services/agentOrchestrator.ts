@@ -1,9 +1,14 @@
 /**
  * Agent Orchestrator - Orchestre l'exécution intelligente et parallèle des agents
+ * Avec système de détection hybride de bugs et collaboration inter-agents
+ * Version améliorée avec les 4 couches: Universal, Bug Handling, Specialty, Context
  */
 
 import { Requirements } from './intentAnalyzer'
 import { logger } from './logger'
+import { bugDetector, BugReport } from './bugDetector'
+import { agentCollaboration, CollaborationSession } from './agentCollaboration'
+import { debugLogger } from './debugLogger'
 
 export interface Agent {
   id: string;
@@ -19,12 +24,16 @@ export interface AgentResult {
   output: string;
   executionTime: number;
   success: boolean;
+  bugsDetected?: BugReport[]; // Nouveaux bugs détectés
+  bugsFixed?: BugReport[]; // Bugs corrigés
+  collaborationSessionId?: string; // ID de session collaborative si applicable
 }
 
 export interface OrchestrationPlan {
   selectedAgents: Agent[];
   executionMode: 'parallel' | 'sequential';
   estimatedTime: number;
+  debugMode?: boolean; // Mode debug pour voir la collaboration
 }
 
 export class AgentOrchestrator {
@@ -34,74 +43,35 @@ export class AgentOrchestrator {
       id: 'architect',
       name: 'Architecte',
       role: 'Structure et architecture de l\'application',
-      systemPrompt: `Tu es un architecte logiciel expert. Ton rôle est de concevoir la structure complète de l'application : 
-- Architecture des dossiers et fichiers
-- Choix des dépendances et packages
-- Structure des composants React
-- Gestion de l'état (Context, hooks)
-- Routing et navigation
-- Configuration (tsconfig, vite.config, etc.)
-
-Génère une structure de projet claire, scalable et maintenable.`,
+      systemPrompt: 'architect', // Voir agentPrompts.ts pour le prompt complet
       priority: 1,
     },
     {
       id: 'designer',
       name: 'Designer UI/UX',
       role: 'Design, styles, animations, expérience utilisateur',
-      systemPrompt: `Tu es un designer UI/UX expert. Ton rôle est de créer une interface moderne et intuitive :
-- Design system (couleurs, typographie, espacements)
-- Composants UI réutilisables
-- Animations et transitions fluides
-- Responsive design (mobile, tablet, desktop)
-- Accessibilité (ARIA, contraste, navigation clavier)
-
-Utilise Tailwind CSS et crée des interfaces élégantes et performantes.`,
+      systemPrompt: 'designer', // Voir agentPrompts.ts
       priority: 2,
     },
     {
       id: 'developer',
       name: 'Développeur',
       role: 'Code fonctionnel, logique métier, intégration API',
-      systemPrompt: `Tu es un développeur fullstack expert React/TypeScript. Ton rôle est d'implémenter :
-- Composants React fonctionnels avec TypeScript
-- Hooks personnalisés (useState, useEffect, useContext)
-- Logique métier et gestion de l'état
-- Intégration d'API externes
-- Gestion des erreurs et validations
-- Performance et optimisations
-
-Génère du code propre, typé, commenté et production-ready.`,
+      systemPrompt: 'developer', // Voir agentPrompts.ts
       priority: 3,
     },
     {
       id: 'tester',
       name: 'Testeur QA',
       role: 'Tests, validation, edge cases',
-      systemPrompt: `Tu es un testeur QA expert. Ton rôle est de garantir la qualité :
-- Tests unitaires (Vitest, React Testing Library)
-- Tests d'intégration
-- Edge cases et scénarios d'erreur
-- Validation des inputs
-- Tests de performance
-- Accessibilité (a11y)
-
-Génère des tests complets et des validations robustes.`,
+      systemPrompt: 'tester', // Voir agentPrompts.ts
       priority: 4,
     },
     {
       id: 'documenter',
       name: 'Documenteur',
       role: 'Documentation technique, README, commentaires',
-      systemPrompt: `Tu es un expert en documentation technique. Ton rôle est de documenter :
-- README.md complet avec exemples
-- Commentaires de code clairs
-- Documentation des API
-- Guide d'installation et déploiement
-- Exemples d'utilisation
-- Troubleshooting et FAQ
-
-Génère une documentation claire, concise et utile.`,
+      systemPrompt: 'documenter', // Voir agentPrompts.ts
       priority: 5,
     },
 
@@ -110,105 +80,49 @@ Génère une documentation claire, concise et utile.`,
       id: 'backend',
       name: 'Backend Developer',
       role: 'API, serveur, base de données',
-      systemPrompt: `Tu es un développeur backend expert. Ton rôle est de créer :
-- API REST avec Hono (Cloudflare Workers)
-- Routes et middlewares
-- Intégration base de données (Supabase, D1)
-- Authentification et sécurité
-- Gestion des sessions et tokens
-- Rate limiting et caching
-
-Génère des API sécurisées, performantes et scalables.`,
+      systemPrompt: 'backend', // Voir agentPrompts.ts
       priority: 3,
     },
     {
       id: 'security',
       name: 'Security Expert',
       role: 'Sécurité, authentification, protection',
-      systemPrompt: `Tu es un expert en sécurité web. Ton rôle est de sécuriser :
-- Authentification (JWT, OAuth, sessions)
-- Protection CSRF, XSS, injection SQL
-- Validation et sanitization des inputs
-- CORS et headers de sécurité
-- Gestion des secrets et API keys
-- Rate limiting et protection DDoS
-
-Génère un code sécurisé selon les meilleures pratiques OWASP.`,
+      systemPrompt: 'security', // Voir agentPrompts.ts
       priority: 2,
     },
     {
       id: 'performance',
       name: 'Performance Engineer',
       role: 'Optimisation, performance, SEO',
-      systemPrompt: `Tu es un expert en performance web. Ton rôle est d'optimiser :
-- Lazy loading et code splitting
-- Image optimization (formats modernes, responsive)
-- Caching stratégies
-- Bundle size optimization
-- Core Web Vitals (LCP, FID, CLS)
-- SEO (meta tags, sitemap, robots.txt)
-
-Génère une application ultra-rapide et SEO-friendly.`,
+      systemPrompt: 'performance', // Voir agentPrompts.ts
       priority: 4,
     },
     {
       id: 'devops',
       name: 'DevOps Engineer',
       role: 'Déploiement, CI/CD, monitoring',
-      systemPrompt: `Tu es un expert DevOps. Ton rôle est de configurer :
-- Déploiement Cloudflare Pages / Workers
-- CI/CD avec GitHub Actions
-- Environment variables et secrets
-- Monitoring et logging
-- Backup et disaster recovery
-- Scaling et auto-healing
-
-Génère une infrastructure cloud robuste et automatisée.`,
+      systemPrompt: 'devops', // Voir agentPrompts.ts (même si pas dans AGENT_SPECIALTIES, utilisera défaut)
       priority: 5,
     },
     {
       id: 'mobile',
       name: 'Mobile Developer',
       role: 'Responsive, PWA, mobile-first',
-      systemPrompt: `Tu es un expert en développement mobile. Ton rôle est de créer :
-- Design responsive (mobile-first)
-- PWA (Progressive Web App) avec service workers
-- Touch gestures et interactions mobiles
-- Performance mobile (3G, 4G)
-- Offline mode et caching
-- App-like experience (splash screen, icons)
-
-Génère une expérience mobile native-like.`,
+      systemPrompt: 'mobile', // Voir agentPrompts.ts
       priority: 3,
     },
     {
       id: 'seo',
       name: 'SEO Specialist',
       role: 'Référencement, meta tags, analytics',
-      systemPrompt: `Tu es un expert SEO. Ton rôle est d'optimiser :
-- Meta tags (title, description, OG, Twitter)
-- Structured data (JSON-LD)
-- Sitemap.xml et robots.txt
-- Performance (Core Web Vitals)
-- Analytics (Google Analytics, Plausible)
-- Accessibility pour SEO
-
-Génère une application parfaitement référencée.`,
+      systemPrompt: 'seo', // Voir agentPrompts.ts
       priority: 4,
     },
     {
       id: 'accessibility',
       name: 'Accessibility Expert',
       role: 'Accessibilité, ARIA, navigation clavier',
-      systemPrompt: `Tu es un expert en accessibilité (a11y). Ton rôle est d'assurer :
-- ARIA labels et roles
-- Navigation clavier complète
-- Screen reader compatibility
-- Contraste de couleurs (WCAG AAA)
-- Focus management
-- Alternative text et descriptions
-
-Génère une application accessible à tous (WCAG 2.1 AAA).`,
+      systemPrompt: 'accessibility', // Voir agentPrompts.ts
       priority: 4,
     },
   ];
@@ -338,7 +252,7 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
   }
 
   /**
-   * Exécute un agent individuel via l'API
+   * Exécute un agent individuel via l'API avec détection de bugs et collaboration
    */
   private async executeAgent(
     agent: Agent,
@@ -347,6 +261,8 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
   ): Promise<AgentResult> {
     const startTime = Date.now()
 
+    // Logger le démarrage
+    debugLogger.logAgentExecution(agent.id, agent.name, 'start')
     logger.logAgent(agent.id, agent.name, `🔄 Démarrage de l'exécution...`)
 
     try {
@@ -373,26 +289,105 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
       }
 
       const data = await response.json()
+      const generatedCode = data.code || data.response || ''
       const executionTime = Date.now() - startTime
+
+      // 🔍 DÉTECTION AUTOMATIQUE DE BUGS
+      const bugDetectionResult = bugDetector.detectBugs(
+        generatedCode,
+        agent.id,
+        agent.name
+      )
+
+      // Logger les bugs détectés
+      bugDetectionResult.bugs.forEach(bug => {
+        debugLogger.logBugDetection(agent.id, agent.name, bug, generatedCode.substring(0, 200))
+      })
+
+      // 🤝 COLLABORATION SI NÉCESSAIRE
+      let collaborationSessionId: string | undefined
+      let fixedCode = generatedCode
+
+      if (bugDetectionResult.needsLeadAgent && bugDetectionResult.bugs.length > 0) {
+        logger.warning(`🚨 [${agent.name}] Escalade vers Lead Agent pour ${bugDetectionResult.bugs.length} bug(s)`)
+
+        // Démarrer une session de collaboration
+        const session = agentCollaboration.startSession(
+          bugDetectionResult.bugs[0], // Bug principal
+          'lead', // Lead Agent
+          [agent.id] // Agents impliqués
+        )
+        collaborationSessionId = session.id
+
+        // Proposer des corrections automatiques pour les bugs auto-fixables
+        const autoFixableBugs = bugDetectionResult.bugs.filter(b => b.autoFixable)
+        if (autoFixableBugs.length > 0) {
+          logger.info(`🔧 [${agent.name}] Auto-correction de ${autoFixableBugs.length} bug(s)...`)
+
+          // Appliquer les corrections automatiques
+          fixedCode = this.applyAutoFixes(generatedCode, autoFixableBugs)
+
+          // Logger les corrections
+          autoFixableBugs.forEach(bug => {
+            agentCollaboration.proposePatch(
+              session,
+              agent.id,
+              bug,
+              generatedCode.substring(0, 200),
+              fixedCode.substring(0, 200)
+            )
+          })
+
+          // Résoudre la session
+          agentCollaboration.resolveSession(
+            session.id,
+            'lead',
+            `${autoFixableBugs.length} bug(s) auto-corrigé(s) par ${agent.name}`
+          )
+        }
+
+        // Logger le résumé de la session
+        debugLogger.logSessionSummary(session)
+      }
+
+      // Logger les performances
+      debugLogger.logPerformance(`Exécution ${agent.name}`, executionTime, agent.id, agent.name)
+
+      // Logger le succès
+      debugLogger.logAgentExecution(agent.id, agent.name, 'success', {
+        outputLength: fixedCode.length,
+        bugsDetected: bugDetectionResult.bugs.length,
+        bugsFixed: bugDetectionResult.bugs.filter(b => b.autoFixable).length,
+      })
 
       logger.logAgent(
         agent.id,
         agent.name,
         `✅ Exécution réussie`,
-        { outputLength: (data.code || data.response || '').length },
+        { 
+          outputLength: fixedCode.length,
+          bugsDetected: bugDetectionResult.bugs.length,
+          bugsFixed: bugDetectionResult.bugs.filter(b => b.autoFixable).length,
+        },
         executionTime
       )
 
       return {
         agentId: agent.id,
         agentName: agent.name,
-        output: data.code || data.response || '',
+        output: fixedCode,
         executionTime,
         success: true,
+        bugsDetected: bugDetectionResult.bugs,
+        bugsFixed: bugDetectionResult.bugs.filter(b => b.autoFixable),
+        collaborationSessionId,
       }
     } catch (error) {
       const executionTime = Date.now() - startTime
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      // Logger l'erreur
+      debugLogger.logAgentExecution(agent.id, agent.name, 'error', { error: errorMessage })
       
       logger.logAgent(
         agent.id,
@@ -413,40 +408,73 @@ Génère une application accessible à tous (WCAG 2.1 AAA).`,
   }
 
   /**
-   * Construit le prompt pour un agent spécifique
+   * Applique automatiquement les corrections pour les bugs auto-fixables
+   */
+  private applyAutoFixes(code: string, bugs: BugReport[]): string {
+    let fixedCode = code
+
+    bugs.forEach(bug => {
+      if (!bug.autoFixable || !bug.suggestedFix) return
+
+      // Correction selon le type de bug
+      switch (bug.type) {
+        case 'syntax':
+          // Corriger les typos comme "Name=" -> "className="
+          if (bug.description.includes('Name=')) {
+            fixedCode = fixedCode.replace(/Name=/g, 'className=')
+          }
+          break
+
+        case 'logic':
+          // Ajouter les imports manquants
+          if (bug.description.includes('useState') && !fixedCode.includes('import { useState }')) {
+            fixedCode = `import { useState } from 'react'\n${fixedCode}`
+          }
+          break
+
+        // Autres types de corrections...
+      }
+    })
+
+    return fixedCode
+  }
+
+  /**
+   * Construit le prompt pour un agent spécifique avec les 4 couches
    */
   private buildPromptForAgent(agent: Agent, requirements: Requirements): string {
-    let prompt = `Tu es ${agent.name}. ${agent.role}\n\n`;
+    // Importer la fonction depuis agentPrompts.ts
+    const { buildEnhancedPrompt } = require('./agentPrompts')
 
-    prompt += `**Contexte du projet :**\n`;
-    prompt += `- Type d'application : ${requirements.appType || 'Application web'}\n`;
-    prompt += `- Stack technique : ${requirements.stack?.join(', ') || 'React, TypeScript, Tailwind CSS'}\n`;
-    prompt += `- Design : ${requirements.design || 'modern'}\n`;
-    
-    if (requirements.features && requirements.features.length > 0) {
-      prompt += `- Features : ${requirements.features.join(', ')}\n`;
+    // Construire le contexte du projet
+    const projectContext = {
+      appType: requirements.appType || 'Application web',
+      stack: requirements.stack || ['React', 'TypeScript', 'Tailwind CSS'],
+      design: requirements.design || 'moderne',
+      features: requirements.features || [],
+      database: requirements.database,
+      authentication: requirements.authentication,
     }
 
-    if (requirements.database) {
-      prompt += `- Base de données : Oui\n`;
-    }
-
-    if (requirements.authentication) {
-      prompt += `- Authentification : Oui\n`;
-    }
+    // Construire la demande utilisateur
+    let userRequest = `Génère le code ${agent.role} pour cette application.\n\n`
 
     if (requirements.uploadedFiles && requirements.uploadedFiles.length > 0) {
-      prompt += `\n**Fichiers fournis par l'utilisateur :**\n`;
+      userRequest += `**Fichiers fournis par l'utilisateur :**\n`;
       requirements.uploadedFiles.forEach(file => {
-        prompt += `\n### ${file.name} (${file.type})\n`;
-        prompt += `${file.content.substring(0, 2000)}...\n`; // Limiter à 2000 caractères
+        userRequest += `\n### ${file.name} (${file.type})\n`;
+        userRequest += `${file.content.substring(0, 2000)}...\n`; // Limiter à 2000 caractères
       });
     }
 
-    prompt += `\n**Ta mission :**\n`;
-    prompt += `Génère le code ${agent.role} pour cette application. Sois précis, professionnel et production-ready.\n`;
-
-    return prompt;
+    // Utiliser le système de prompts en 4 couches
+    return buildEnhancedPrompt(
+      agent.systemPrompt as any, // ID de l'agent
+      agent.name,
+      agent.role,
+      userRequest,
+      projectContext
+    )
   }
 
   /**
