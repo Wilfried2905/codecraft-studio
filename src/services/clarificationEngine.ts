@@ -1,5 +1,12 @@
 /**
- * Clarification Engine - Génère des questions intelligentes pour clarifier les besoins
+ * Clarification Engine V2 - Utilise des DÉFAUTS INTELLIGENTS au lieu de poser trop de questions
+ * 
+ * PHILOSOPHIE (Système Multi-Agents V2) :
+ * - L'utilisateur a toujours raison
+ * - Si la demande est claire → agir IMMÉDIATEMENT avec défauts intelligents
+ * - Questions UNIQUEMENT pour choix architecturaux CRITIQUES
+ * - Jamais plus de 1 question à la fois
+ * - Défauts : Tailwind, React 19, TypeScript, Responsive, Moderne
  */
 
 import { Requirements, UserIntent } from './intentAnalyzer';
@@ -12,91 +19,110 @@ export interface ClarificationResponse {
 
 export class ClarificationEngine {
   /**
-   * Génère des questions de clarification intelligentes
+   * Génère UNE SEULE question si vraiment critique, sinon utilise défauts intelligents
    */
   generateQuestions(intent: UserIntent, requirements: Requirements): ClarificationResponse {
     const questions: string[] = [];
-    const suggestedDefaults: Record<string, any> = {};
+    const suggestedDefaults: Record<string, any> = {
+      // DÉFAUTS INTELLIGENTS APPLIQUÉS AUTOMATIQUEMENT
+      design: 'modern', // Moderne par défaut
+      responsive: true, // Toujours responsive
+      stack: ['React 19', 'TypeScript', 'Tailwind CSS', 'Hono.js'],
+      backend: 'serverless', // Cloudflare Workers par défaut
+    };
 
-    // 1. Type d'application
+    // ========================================
+    // NOUVELLE STRATÉGIE V2 : DÉFAUTS INTELLIGENTS
+    // ========================================
+    
+    // Appliquer les défauts automatiquement
     if (!requirements.appType && intent.type === 'create_app') {
-      questions.push("📱 **Quel type d'application voulez-vous créer ?**\n- E-commerce\n- Landing Page\n- Dashboard\n- Portfolio\n- Blog\n- CRM / Gestion\n- Autre (précisez)");
-      suggestedDefaults.appType = 'landing-page';
+      suggestedDefaults.appType = 'web-app'; // Défaut générique
     }
 
-    // 2. Design & Style
     if (!requirements.design) {
-      questions.push("🎨 **Quel style de design préférez-vous ?**\n- Minimal (épuré, sobre)\n- Moderne (animations, gradients)\n- Corporate (professionnel, sérieux)");
-      suggestedDefaults.design = 'modern';
+      suggestedDefaults.design = 'modern'; // Moderne avec animations
     }
 
-    // 3. Features avancées
+    // E-commerce : défauts intelligents
     if (requirements.appType === 'e-commerce') {
       if (!requirements.features?.includes('payment')) {
-        questions.push("💳 **Système de paiement ?**\n- Stripe\n- PayPal\n- Les deux\n- Aucun pour l'instant");
-        suggestedDefaults.payment = 'stripe';
+        suggestedDefaults.payment = 'stripe'; // Stripe par défaut
       }
-
       if (!requirements.database) {
-        questions.push("📦 **Gestion de l'inventaire ?**\n- Oui, avec base de données (Supabase)\n- Non, données statiques pour l'instant");
-        suggestedDefaults.database = true;
+        suggestedDefaults.database = true; // DB requise pour e-commerce
       }
     }
 
-    // 4. Authentification
+    // Authentification : défaut OAuth + Email
     if (requirements.features?.includes('auth') || requirements.authentication) {
-      questions.push("🔐 **Type d'authentification ?**\n- Email/Password\n- OAuth (Google, GitHub)\n- Les deux");
-      suggestedDefaults.authType = 'both';
+      suggestedDefaults.authType = 'both'; // Email + OAuth
     }
 
-    // 5. Responsive
-    if (!requirements.features?.includes('responsive')) {
-      questions.push("📱 **Compatibilité mobile ?**\n- Oui, responsive design\n- Desktop uniquement");
-      suggestedDefaults.responsive = true;
-    }
+    // Responsive : TOUJOURS activé
+    suggestedDefaults.responsive = true;
 
-    // 6. Backend / API
+    // Backend : Serverless par défaut
     if (requirements.features?.includes('api') || requirements.features?.includes('crud')) {
-      questions.push("⚙️ **Backend nécessaire ?**\n- Oui, avec API REST\n- Non, frontend uniquement\n- Serverless (Cloudflare Workers)");
       suggestedDefaults.backend = 'serverless';
     }
 
-    // Si pas de questions, tout est clair
+    // ========================================
+    // QUESTIONS UNIQUEMENT SI CRITIQUE
+    // ========================================
+    
+    // Question UNIQUEMENT pour choix d'authentification si ambiguïté critique
+    // (Exemple : si l'utilisateur mentionne "sécurisé" mais pas le type d'auth)
+    const hasCriticalAmbiguity = 
+      (requirements.authentication && !requirements.authType) ||
+      (requirements.appType === 'e-commerce' && !requirements.features?.includes('payment'));
+
+    if (hasCriticalAmbiguity && requirements.authentication) {
+      questions.push("🔐 **Une question rapide** : Authentification Email/Password, OAuth (Google/GitHub), ou les deux ?");
+    }
+
+    // Si AUCUNE question critique
     if (questions.length === 0) {
       return {
         needsClarification: false,
         questions: [],
+        suggestedDefaults,
       };
     }
 
-    // Ajouter un message d'introduction
-    const intro = `📋 **J'ai besoin de quelques précisions pour créer l'application parfaite pour vous :**\n\n`;
-    const outro = `\n\n💡 **Vous pouvez répondre simplement, ou me dire "utilise les options par défaut" si vous voulez que je décide.**`;
+    // Si question critique (MAX 1), message court
+    const intro = `✨ **Parfait !** Je vais créer votre application avec les meilleurs défauts (React 19, TypeScript, Tailwind, responsive).\n\n`;
+    const outro = `\n\n💡 **Ou répondez simplement "par défaut" et je décide pour vous !**`;
 
     return {
       needsClarification: true,
-      questions: [intro + questions.join('\n\n') + outro],
+      questions: [intro + questions[0] + outro], // MAX 1 question
       suggestedDefaults,
     };
   }
 
   /**
-   * Parse la réponse de l'utilisateur aux questions de clarification
+   * Parse la réponse de l'utilisateur (V2 : Défauts intelligents automatiques)
    */
   parseUserResponse(userResponse: string, previousRequirements: Requirements): Requirements {
     const normalized = userResponse.toLowerCase();
     const updatedRequirements = { ...previousRequirements };
 
-    // Détecter "utilise les options par défaut"
-    if (normalized.includes('défaut') || normalized.includes('default') || normalized.includes('décide')) {
+    // DÉFAUTS INTELLIGENTS TOUJOURS APPLIQUÉS
+    const defaults = {
+      appType: updatedRequirements.appType || 'web-app',
+      design: updatedRequirements.design || 'modern',
+      stack: updatedRequirements.stack || ['React 19', 'TypeScript', 'Tailwind CSS', 'Hono.js'],
+      features: [...new Set([...(updatedRequirements.features || []), 'responsive', 'seo'])],
+      database: updatedRequirements.database ?? false,
+      authentication: updatedRequirements.authentication ?? false,
+    };
+
+    // Si l'utilisateur dit "défaut" ou "décide" → appliquer tous les défauts
+    if (normalized.includes('défaut') || normalized.includes('default') || normalized.includes('décide') || normalized.includes('par défaut')) {
       return {
         ...updatedRequirements,
-        appType: updatedRequirements.appType || 'landing-page',
-        design: updatedRequirements.design || 'modern',
-        stack: updatedRequirements.stack || ['React', 'TypeScript', 'Tailwind CSS'],
-        features: [...(updatedRequirements.features || []), 'responsive', 'seo'],
-        database: updatedRequirements.database ?? false,
-        authentication: updatedRequirements.authentication ?? false,
+        ...defaults,
       };
     }
 
