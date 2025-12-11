@@ -232,4 +232,3 @@ Je suis votre assistant développeur IA. Voici ce que je peux faire :
 - "Génère 3 variations de cette page"
 
 Que voulez-vous créer aujourd'hui ? 🚀`:`Je suis prêt à créer votre application ! Décrivez-moi ce que vous voulez, ou demandez de l'aide en tapant "aide" ou "comment ça marche".`}resetState(){this.conversationState={awaitingClarification:!1}}}export{k as AIDeveloper};
-//# sourceMappingURL=aiDeveloper-DBQ3k4ie.js.map

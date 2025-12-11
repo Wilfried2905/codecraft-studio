@@ -16,6 +16,7 @@ import { CollaborationPanel } from './components/CollaborationPanel'
 import { CollaboratorCursors } from './components/CollaboratorCursors'
 import { CommentsPanel } from './components/CommentsPanel'
 import { TerminalPanel } from './components/TerminalPanel'
+import { ComponentLibraryPanel } from './components/ComponentLibraryPanel'
 import { templateManager } from './services/templateManager'
 import { useWebContainer } from './hooks/useWebContainer'
 import { useProject } from './hooks/useProject'
@@ -79,6 +80,12 @@ export default function AppIDE() {
   const [showShare, setShowShare] = useState(false)
   const [showVersionHistory, setShowVersionHistory] = useState(false)
   const [showProjectSidebar, setShowProjectSidebar] = useState(true)
+  const [showGitPanel, setShowGitPanel] = useState(false)
+  const [showDeployPanel, setShowDeployPanel] = useState(false)
+  const [showImageGeneration, setShowImageGeneration] = useState(false)
+  const [showComments, setShowComments] = useState(false)
+  const [showTerminal, setShowTerminal] = useState(false)
+  const [showCollaboration, setShowCollaboration] = useState(false)
   const [projectName, setProjectName] = useState('Untitled Project')
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState('')
 
@@ -362,6 +369,23 @@ export default function AppIDE() {
           }
         }}
       />
+
+      {/* Terminal Panel */}
+      <TerminalPanel
+        isOpen={showTerminal}
+        onClose={() => setShowTerminal(false)}
+      />
+
+      {/* Comments Panel */}
+      {isAuthenticated && currentProject && (
+        <CommentsPanel
+          isOpen={showComments}
+          onClose={() => setShowComments(false)}
+          projectId={currentProject.id}
+          userId={user?.id || ''}
+          userName={user?.user_metadata?.full_name || user?.email || 'Anonymous'}
+        />
+      )}
 
       {/* Floating Action Buttons */}
       {generatedCode && (

@@ -22,6 +22,17 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist-client',
-    sourcemap: true
+    sourcemap: false,  // Désactiver pour réduire l'usage mémoire
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'monaco': ['@monaco-editor/react'],
+          'ui-vendor': ['lucide-react'],
+          'utils': ['jszip', 'file-saver', 'marked']
+        }
+      }
+    }
   }
 })
