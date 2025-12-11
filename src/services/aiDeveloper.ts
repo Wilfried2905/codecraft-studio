@@ -40,6 +40,7 @@ export class AIDeveloper {
 
   /**
    * Point d'entrée principal - Traite la demande de l'utilisateur
+   * 🔥 MODE HYBRIDE : Fast (1 appel) vs Advanced (6 agents)
    */
   async process(
     userPrompt: string,
@@ -71,13 +72,25 @@ export class AIDeveloper {
         };
       }
 
-      // Cas 3: Clarification nécessaire
-      if (intent.needsClarification) {
-        return this.requestClarification(intent, requirements);
-      }
+      // 🔥 ROUTING HYBRIDE : Déterminer Fast vs Advanced
+      const isSimple = this.isSimpleRequest(userPrompt, requirements);
+      
+      if (isSimple && intent.type === 'create_app') {
+        // MODE FAST : Génération rapide (1 appel API)
+        logger.info('⚡ MODE FAST activé pour:', userPrompt.substring(0, 50));
+        return await this.fastGeneration(userPrompt, requirements);
+      } else {
+        // MODE ADVANCED : Multi-agents (existant)
+        logger.info('🤖 MODE ADVANCED activé pour:', userPrompt.substring(0, 50));
+        
+        // Cas 3: Clarification nécessaire
+        if (intent.needsClarification) {
+          return this.requestClarification(intent, requirements);
+        }
 
-      // Cas 4: Exécution directe
-      return await this.executeGeneration(requirements);
+        // Cas 4: Exécution multi-agents
+        return await this.executeGeneration(requirements);
+      }
 
     } catch (error) {
       logError(error, 'AIDeveloper.process');
@@ -275,8 +288,114 @@ Que voulez-vous créer aujourd'hui ? 🚀`;
   }
 
   /**
-   * Réinitialise l'état de la conversation
+   * 🔥 MODE FAST : Génération rapide avec 1 seul appel API
    */
+  private async fastGeneration(
+    userPrompt: string,
+    requirements: Requirements
+  ): Promise<DeveloperResponse> {
+    try {
+      logger.info('⚡ [FAST MODE] Appel API direct pour génération rapide');
+
+      // Appel direct à /api/generate
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: userPrompt,
+          agent: 'design',
+          conversation: []
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.code) {
+        throw new Error('No code returned from API');
+      }
+
+      logger.info('⚡ [FAST MODE] Code généré avec succès:', data.code.length, 'chars');
+
+      return {
+        type: 'execution',
+        message: data.message || '⚡ **Génération rapide terminée !**\n\nVotre application est prête dans le Preview.',
+        code: data.code,
+        requirements,
+        executionPlan: '⚡ Mode Rapide (1 agent intelligent)',
+      };
+
+    } catch (error) {
+      // 🔥 FALLBACK OPTION A : Retry en MODE ADVANCED
+      logger.warn('⚠️ [FAST MODE] Échec, passage en MODE ADVANCED:', error);
+      logger.info('🤖 [FALLBACK] Retry avec multi-agents...');
+      
+      // Retry avec le mode multi-agents
+      return await this.executeGeneration(requirements);
+    }
+  }
+
+  /**
+   * 🔥 DÉTECTION : Simple vs Complex request
+   */
+  private isSimpleRequest(prompt: string, requirements: Requirements): boolean {
+    const lowerPrompt = prompt.toLowerCase();
+
+    // Mots-clés de complexité
+    const complexKeywords = [
+      'authentification', 'auth', 'connexion', 'login', 'signup', 'register',
+      'paiement', 'payment', 'stripe', 'paypal', 'checkout',
+      'base de données', 'database', 'db', 'backend', 'api', 'serveur',
+      'temps réel', 'realtime', 'websocket', 'live',
+      'admin', 'multi-page', 'plusieurs pages', 'complet', 'avancé',
+      'professionnel', 'enterprise'
+    ];
+
+    // Cas spécial : e-commerce → toujours ADVANCED
+    if (lowerPrompt.includes('e-commerce') || lowerPrompt.includes('ecommerce') || lowerPrompt.includes('boutique')) {
+      logger.info('🔍 [DETECTION] E-commerce détecté → ADVANCED');
+      return false;
+    }
+
+    // Vérification mots-clés complexes
+    const hasComplexKeyword = complexKeywords.some(kw => lowerPrompt.includes(kw));
+    if (hasComplexKeyword) {
+      logger.info('🔍 [DETECTION] Mot-clé complexe détecté → ADVANCED');
+      return false;
+    }
+
+    // Vérification nombre de features
+    const featureCount = requirements.features?.length || 0;
+    if (featureCount > 2) {
+      logger.info('🔍 [DETECTION]', featureCount, 'features → ADVANCED');
+      return false;
+    }
+
+    // Vérification auth/db
+    if (requirements.authentication) {
+      logger.info('🔍 [DETECTION] Authentication requise → ADVANCED');
+      return false;
+    }
+
+    if (requirements.database) {
+      logger.info('🔍 [DETECTION] Database requise → ADVANCED');
+      return false;
+    }
+
+    // Vérification longueur prompt
+    if (prompt.length > 200) {
+      logger.info('🔍 [DETECTION] Prompt long (', prompt.length, 'chars) → ADVANCED');
+      return false;
+    }
+
+    // Tous les critères passent → SIMPLE
+    logger.info('🔍 [DETECTION] Requête simple détectée → FAST MODE');
+    return true;
+  }
+
   /**
    * Réinitialise l'état de la conversation
    */

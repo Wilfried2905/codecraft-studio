@@ -100,6 +100,8 @@ export default function AppIDE() {
 
   // Handle sending a message
   const handleSendMessage = async (message: string, uploadedFiles?: Array<{ name: string; content: string; type: string }>) => {
+    console.log('🔵 handleSendMessage appelé avec:', message)
+    
     // Add user message
     let userMessageContent = message
     if (uploadedFiles && uploadedFiles.length > 0) {
@@ -111,16 +113,34 @@ export default function AppIDE() {
       content: userMessageContent,
       timestamp: Date.now()
     }
+    
+    console.log('🔵 Ajout message utilisateur:', userMessage)
     setMessages(prev => [...prev, userMessage])
     setLoading(true)
+    console.log('🔵 Loading activé')
+
+    // 🚀 Afficher immédiatement un message de chargement
+    // 🔥 Message de chargement adaptatif (sera mis à jour par executionPlan)
+    const loadingMessage: Message = {
+      role: 'assistant',
+      content: '🚀 **Analyse en cours...**\n\nDétection de la complexité de votre demande...',
+      timestamp: Date.now(),
+      progress: 0
+    }
+    
+    console.log('🔵 Ajout message de chargement:', loadingMessage)
+    setMessages(prev => [...prev, loadingMessage])
 
     try {
+      console.log('🔵 Import AIDeveloper...')
       // Import AI Developer dynamically
       const { AIDeveloper } = await import('../services/aiDeveloper')
       const aiDeveloper = new AIDeveloper()
 
+      console.log('🔵 Appel aiDeveloper.process()...')
       // Process user request with AI Developer
       const response = await aiDeveloper.process(message, uploadedFiles)
+      console.log('🔵 Réponse reçue:', response)
 
       // Build execution plan for the message
       const executionPlan = response.executionPlan ? {
@@ -137,7 +157,7 @@ export default function AppIDE() {
         executionTime: Math.floor(Math.random() * 3000) + 1000
       })) : undefined
 
-      // Add assistant response with enriched data
+      // 🎯 Remplacer le message de chargement par le résultat final
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.message,
@@ -147,7 +167,8 @@ export default function AppIDE() {
         code: response.code,
         progress: 100
       }
-      setMessages(prev => [...prev, assistantMessage])
+      // Supprimer le message de chargement et ajouter le résultat final
+      setMessages(prev => [...prev.slice(0, -1), assistantMessage])
 
       // If code was generated, update the preview
       if (response.code) {
@@ -168,7 +189,8 @@ export default function AppIDE() {
       setLoading(false)
 
     } catch (error) {
-      console.error('Error processing message:', error)
+      console.error('🔴 ERREUR dans handleSendMessage:', error)
+      console.error('🔴 Stack trace:', error instanceof Error ? error.stack : 'N/A')
       
       // Add error message
       const errorMessage: Message = {
