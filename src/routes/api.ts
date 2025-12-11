@@ -108,11 +108,14 @@ api.post('/generate', async (c) => {
       return c.json({ error: 'Prompt is required' }, 400)
     }
 
-    // Get API key from environment
-    const apiKey = c.env?.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY
+    // Get API key from environment (try Cloudflare binding first, then process.env)
+    const apiKey = (c.env?.ANTHROPIC_API_KEY && c.env.ANTHROPIC_API_KEY !== 'your_anthropic_api_key_here') 
+      ? c.env.ANTHROPIC_API_KEY 
+      : process.env.ANTHROPIC_API_KEY
 
     if (!apiKey || apiKey === 'your_anthropic_api_key_here') {
       console.warn('⚠️  Anthropic API key not configured, returning placeholder')
+      console.log('Debug: c.env =', c.env, 'process.env.ANTHROPIC_API_KEY =', process.env.ANTHROPIC_API_KEY ? 'EXISTS' : 'MISSING')
       
       // Return placeholder HTML for testing
       const placeholderHTML = `<!DOCTYPE html>
@@ -187,11 +190,13 @@ api.post('/generate', async (c) => {
     const agentPrompts: Record<string, string> = {
       design: `Tu es un expert UI/UX designer. Tu crées des interfaces modernes, élégantes et accessibles.
 Focus sur l'esthétique, l'expérience utilisateur et les animations fluides.
-Utilise Tailwind CSS pour le styling. Code propre et semantic HTML.`,
+Utilise Tailwind CSS via CDN VERSIONNÉE : <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+Code propre et semantic HTML.`,
       
       code: `Tu es un développeur expert. Tu écris du code propre, performant et maintenable.
 Focus sur les bonnes pratiques, l'optimisation et la structure du code.
-Utilise les dernières fonctionnalités modernes (ES6+, Tailwind CSS).`,
+Utilise Tailwind CSS via CDN VERSIONNÉE : <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+Utilise les dernières fonctionnalités modernes (ES6+).`,
       
       test: `Tu es un expert en tests et debugging. Tu valides le code et suggères des améliorations.
 Focus sur la robustesse, la gestion des erreurs et les edge cases.
@@ -248,11 +253,42 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
     }
 
     const data = await response.json()
-    const generatedCode = data.content[0].text
+    const fullResponse = data.content[0].text
+
+    // 🔥 EXTRACTION du code HTML du bloc ```html si présent
+    const codeBlockMatch = fullResponse.match(/```(?:html)?\s*([\s\S]*?)```/)
+    const extractedCode = codeBlockMatch ? codeBlockMatch[1].trim() : fullResponse
+
+    // 🔥 CORRECTION : Extraire le texte court SANS le code (pour le chat)
+    let shortMessage = '✅ Application générée avec succès !'
+    
+    if (codeBlockMatch) {
+      // Supprimer TOUS les blocs de code de la réponse
+      const cleanedResponse = fullResponse.replace(/```[\s\S]*?```/g, '').trim()
+      
+      // Garder seulement les lignes qui ne contiennent PAS de code HTML
+      const lines = cleanedResponse.split('\n').filter(line => {
+        const trimmed = line.trim()
+        return trimmed.length > 0 && 
+               !trimmed.startsWith('<') && 
+               !trimmed.includes('<!DOCTYPE') &&
+               !trimmed.includes('<html') &&
+               !trimmed.includes('<head') &&
+               !trimmed.includes('<body')
+      })
+      
+      if (lines.length > 0) {
+        shortMessage = lines.slice(0, 2).join(' ').substring(0, 150)
+      }
+    }
+
+    console.log('📤 Code extrait:', extractedCode.substring(0, 100) + '...')
+    console.log('📤 Message:', shortMessage.substring(0, 100))
 
     return c.json({
       success: true,
-      code: generatedCode,
+      code: extractedCode,  // HTML PUR (sans ```html)
+      message: shortMessage,  // Message court
       agent: agent || 'Design',
       timestamp: new Date().toISOString(),
       usage: data.usage
@@ -276,7 +312,9 @@ api.post('/variations', async (c) => {
       return c.json({ error: 'Code is required' }, 400)
     }
 
-    const apiKey = c.env?.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY
+    const apiKey = (c.env?.ANTHROPIC_API_KEY && c.env.ANTHROPIC_API_KEY !== 'your_anthropic_api_key_here') 
+      ? c.env.ANTHROPIC_API_KEY 
+      : process.env.ANTHROPIC_API_KEY
 
     if (!apiKey || apiKey === 'your_anthropic_api_key_here') {
       // Return placeholder variations
