@@ -56,9 +56,10 @@ export class IntentAnalyzer {
    * Détecte le type d'intention principale
    */
   private detectIntent(prompt: string): UserIntent {
-    const createKeywords = ['créer', 'faire', 'générer', 'construire', 'développer', 'app', 'site', 'application'];
+    // 🔥 CORRECTION: Accepter TOUTES les variantes de "créer"
+    const createKeywords = ['créer', 'crée', 'créé', 'cree', 'cré', 'faire', 'fais', 'fait', 'générer', 'génère', 'construire', 'construit', 'développer', 'développe', 'app', 'site', 'application', 'todo', 'to-do', 'liste', 'dashboard', 'page', 'formulaire'];
     const modifyKeywords = ['modifier', 'changer', 'améliorer', 'ajouter', 'supprimer', 'corriger'];
-    const questionKeywords = ['comment', 'pourquoi', 'qu\'est-ce', 'est-ce que', 'peux-tu', '?'];
+    const questionKeywords = ['comment', 'pourquoi', 'qu\'est-ce', 'est-ce que', 'quel', 'quelle'];
 
     let type: UserIntent['type'] = 'question';
     let confidence = 0;
@@ -75,10 +76,19 @@ export class IntentAnalyzer {
       confidence = 0.7;
     }
 
-    // Détecter une simple question
-    if (questionKeywords.some(kw => prompt.includes(kw)) && !createKeywords.some(kw => prompt.includes(kw))) {
+    // 🔥 CORRECTION: Détecter question SEULEMENT si AUCUN mot de création
+    const hasCreateIntent = createKeywords.some(kw => prompt.includes(kw));
+    const hasQuestionWord = questionKeywords.some(kw => prompt.includes(kw));
+    
+    if (hasQuestionWord && !hasCreateIntent) {
       type = 'question';
       confidence = 0.6;
+    }
+    
+    // 🔥 FORCER create_app si au moins 1 mot de création détecté
+    if (hasCreateIntent && type !== 'modify_app') {
+      type = 'create_app';
+      confidence = 0.9;
     }
 
     return {
@@ -98,8 +108,10 @@ export class IntentAnalyzer {
   private extractRequirements(prompt: string, uploadedFiles?: Array<{ name: string; content: string; type: string }>): Requirements {
     const requirements: Requirements = {};
 
-    // Détecter le type d'application
-    if (prompt.includes('e-commerce') || prompt.includes('boutique') || prompt.includes('shop')) {
+    // 🔥 CORRECTION: Ajouter TODO et autres types manquants
+    if (prompt.includes('todo') || prompt.includes('to-do') || prompt.includes('tâche') || prompt.includes('tache')) {
+      requirements.appType = 'todo-app';
+    } else if (prompt.includes('e-commerce') || prompt.includes('boutique') || prompt.includes('shop')) {
       requirements.appType = 'e-commerce';
     } else if (prompt.includes('landing') || prompt.includes('page d\'accueil')) {
       requirements.appType = 'landing-page';
@@ -111,6 +123,11 @@ export class IntentAnalyzer {
       requirements.appType = 'blog';
     } else if (prompt.includes('crm') || prompt.includes('gestion')) {
       requirements.appType = 'crm';
+    } else if (prompt.includes('formulaire') || prompt.includes('form')) {
+      requirements.appType = 'form';
+    } else {
+      // 🔥 FALLBACK: Deviner le type depuis les mots-clés
+      requirements.appType = 'web-app';
     }
 
     // Détecter les features
@@ -206,26 +223,20 @@ export class IntentAnalyzer {
     needed: boolean;
     questions: string[];
   } {
+    // 🔥 MODE DIRECT GENERATION: Désactiver TOUTES les clarifications
+    // Si un appType est détecté, on génère directement
+    if (requirements.appType && intent.type === 'create_app') {
+      return {
+        needed: false,
+        questions: [],
+      };
+    }
+
     const questions: string[] = [];
 
-    // Si pas de type d'app détecté
+    // Seulement si VRAIMENT vague (pas d'appType du tout)
     if (!requirements.appType && intent.type === 'create_app') {
-      questions.push("Quel type d'application voulez-vous créer ? (e-commerce, landing page, dashboard, portfolio, blog, CRM)");
-    }
-
-    // Si payment détecté mais pas de provider
-    if (requirements.features?.includes('payment')) {
-      questions.push("Quel système de paiement préférez-vous ? (Stripe, PayPal, ou les deux)");
-    }
-
-    // Si database mais pas de précision
-    if (requirements.database && !requirements.stack?.some(s => s.includes('Supabase') || s.includes('Firebase'))) {
-      questions.push("Voulez-vous utiliser Supabase, Firebase, ou une autre base de données ?");
-    }
-
-    // Si pas de design spécifié
-    if (!requirements.design && intent.type === 'create_app') {
-      questions.push("Quel style de design préférez-vous ? (minimal, moderne/animé, corporate/professionnel)");
+      questions.push("Quel type d'application voulez-vous créer ? (todo, e-commerce, landing page, dashboard, portfolio, blog, CRM, formulaire)");
     }
 
     return {
