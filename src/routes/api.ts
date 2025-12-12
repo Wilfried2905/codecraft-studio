@@ -690,6 +690,22 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
     let projectType = 'single-file' // Par défaut
     let parsedProject = null
 
+    // 🎯 DÉTECTION FORCÉE basée sur le prompt utilisateur
+    const promptLower = prompt.toLowerCase()
+    const shouldBeType2 = (
+      promptLower.includes('react') ||
+      promptLower.includes('vite') ||
+      promptLower.includes('express') ||
+      promptLower.includes('backend') ||
+      promptLower.includes('api') ||
+      promptLower.includes('serveur') ||
+      promptLower.includes('node.js') ||
+      promptLower.includes('full-stack') ||
+      promptLower.includes('projet')
+    )
+
+    console.log('🔍 Prompt utilisateur contient mots-clés Type 2?', shouldBeType2)
+
     // Essayer de parser comme JSON (Type 2)
     try {
       // Méthode 1 : Chercher dans des code blocks JSON
@@ -697,22 +713,24 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
       const codeBlockMatch = fullResponse.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (codeBlockMatch) {
         jsonString = codeBlockMatch[1].trim()
+        console.log('🔍 JSON trouvé dans code block')
       } else {
         // Méthode 2 : Chercher JSON brut contenant "projectType"
-        const jsonMatch = fullResponse.match(/\{[\s\S]*?"projectType"\s*:\s*"multi-files"[\s\S]*?\}(?=\s*$|```|\n\n)/)
+        const jsonMatch = fullResponse.match(/\{[\s\S]*?"projectType"[\s\S]*?\}/)
         if (jsonMatch) {
           jsonString = jsonMatch[0]
+          console.log('🔍 JSON brut trouvé dans réponse')
         }
       }
 
       if (jsonString) {
-        console.log('🔍 JSON brut trouvé:', jsonString.substring(0, 200) + '...')
+        console.log('🔍 JSON extraction (200 premiers chars):', jsonString.substring(0, 200))
         parsedProject = JSON.parse(jsonString)
         
-        if (parsedProject.projectType === 'multi-files') {
+        if (parsedProject.projectType === 'multi-files' || (shouldBeType2 && parsedProject.files)) {
           projectType = 'multi-files'
           console.log('🔷 TYPE 2 DÉTECTÉ : Projet multi-fichiers')
-          console.log('📦 Projet:', parsedProject.projectName)
+          console.log('📦 Projet:', parsedProject.projectName || 'unnamed')
           console.log('📁 Fichiers:', parsedProject.files?.length || 0)
           
           // Validation minimale
@@ -720,6 +738,9 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
             throw new Error('Type 2 détecté mais aucun fichier trouvé')
           }
         }
+      } else if (shouldBeType2) {
+        // Fallback : Si prompt suggère Type 2 mais pas de JSON trouvé
+        console.log('⚠️ Prompt suggère Type 2 mais aucun JSON trouvé, fallback Type 1')
       }
     } catch (e) {
       // Pas du JSON valide, c'est Type 1
