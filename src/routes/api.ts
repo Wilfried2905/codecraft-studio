@@ -708,13 +708,23 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
 
     // Essayer de parser comme JSON (Type 2)
     try {
-      // Méthode 1 : Chercher dans des code blocks JSON
+      // Méthode 1 : Chercher dans des code blocks JSON/JavaScript
       let jsonString = null
-      const codeBlockMatch = fullResponse.match(/```(?:json)?\s*([\s\S]*?)```/)
+      const codeBlockMatch = fullResponse.match(/```(?:json|javascript|js)?\s*([\s\S]*?)```/)
       if (codeBlockMatch) {
-        jsonString = codeBlockMatch[1].trim()
-        console.log('🔍 JSON trouvé dans code block')
-      } else {
+        const blockContent = codeBlockMatch[1].trim()
+        console.log('🔍 Code block trouvé, taille:', blockContent.length)
+        
+        // Vérifier si c'est du JSON (commence par { et contient "projectType")
+        if (blockContent.startsWith('{') && blockContent.includes('"projectType"')) {
+          jsonString = blockContent
+          console.log('🔍 JSON trouvé dans code block')
+        } else {
+          console.log('⚠️ Code block trouvé mais pas de JSON valide')
+        }
+      }
+      
+      if (!jsonString) {
         // Méthode 2 : Chercher JSON brut contenant "projectType"
         // Stratégie : Trouver le JSON le plus long possible
         const startMatch = fullResponse.match(/\{\s*"projectType"\s*:\s*"multi-files"/)
