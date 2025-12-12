@@ -851,9 +851,15 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
       }
     } catch (e) {
       // Pas du JSON valide, c'est Type 1
-      console.log('🔹 TYPE 1 DÉTECTÉ : Fichier HTML unique')
-      console.log('Raison:', e instanceof Error ? e.message : 'Parse error')
-      projectType = 'single-file'
+      // MAIS : Si projectType a déjà été changé en 'multi-files', NE PAS L'ÉCRASER
+      if (projectType !== 'multi-files') {
+        console.log('🔹 TYPE 1 DÉTECTÉ : Fichier HTML unique')
+        console.log('Raison:', e instanceof Error ? e.message : 'Parse error')
+        projectType = 'single-file'
+      } else {
+        console.log('⚠️ Erreur pendant traitement Type 2, mais projectType déjà détecté comme multi-files')
+        console.log('Erreur:', e instanceof Error ? e.message : 'Unknown error')
+      }
     }
 
     // 🔹 TYPE 1 : FICHIER HTML UNIQUE (comme avant)
