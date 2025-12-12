@@ -228,7 +228,7 @@ TYPE 1 (HTML unique) - RETOURNER DIRECTEMENT:
 
 TYPE 2 (Multi-fichiers) - RETOURNER **OBLIGATOIREMENT** dans ce format **SANS AUCUN TEXTE EXPLICATIF** :
 
-```json
+DANS UN CODE BLOCK JSON (triple backticks + json):
 {
   "projectType": "multi-files",
   "projectName": "nom-du-projet",
@@ -253,13 +253,13 @@ TYPE 2 (Multi-fichiers) - RETOURNER **OBLIGATOIREMENT** dans ce format **SANS AU
   "mainFile": "server.js",
   "setupInstructions": "1. npm install\n2. npm start\n3. Ouvrir http://localhost:3000"
 }
-```
+(fermer avec triple backticks)
 
 🚨 RÈGLES STRICTES TYPE 2:
-1. COMMENCER DIRECTEMENT PAR ```json (RIEN AVANT)
+1. COMMENCER DIRECTEMENT par triple-backticks-json (RIEN AVANT)
 2. PAS de texte explicatif avant ou après le JSON
 3. PAS de description du projet en dehors du JSON
-4. JUSTE le bloc JSON entre ```json et ```
+4. JUSTE le bloc JSON entre les triple-backticks
 5. Inclure TOUS les fichiers nécessaires (package.json, README.md, .env.example, etc.)
 6. Code complet et fonctionnel dans chaque fichier
 7. setupInstructions claires et précises
