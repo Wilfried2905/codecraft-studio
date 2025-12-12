@@ -11,6 +11,15 @@ const app = new Hono()
 // Enable CORS globally
 app.use('/*', cors())
 
+// 🔥 HEADERS WEBCONTAINER : Requis pour SharedArrayBuffer et WebAssembly
+// Cross-Origin-Embedder-Policy (COEP) + Cross-Origin-Opener-Policy (COOP)
+// Sans ces headers, WebContainer ne peut pas démarrer
+app.use('/*', async (c, next) => {
+  await next()
+  c.header('Cross-Origin-Embedder-Policy', 'require-corp')
+  c.header('Cross-Origin-Opener-Policy', 'same-origin')
+})
+
 // Mount API routes
 app.route('/api', api)
 

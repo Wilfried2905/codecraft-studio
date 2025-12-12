@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
-import { Code, Eye, Smartphone, Tablet, Monitor, RefreshCw, ExternalLink, Search, Terminal } from 'lucide-react'
+import { Code, Eye, Smartphone, Tablet, Monitor, RefreshCw, ExternalLink, Search, Terminal, PlayCircle } from 'lucide-react'
 import MonacoEditor from './MonacoEditor'
 import SearchReplacePanel from './SearchReplacePanel'
 import ConsolePanel from './ConsolePanel'
 import { FileExplorer } from './FileExplorer'
+import WebContainerPreview from './WebContainerPreview'
 import { generateAndDownloadZip } from '../utils/zipGenerator'
+import { detectProjectType } from '../utils/fileSystemConverter'
 
 interface FileItem {
   path: string
@@ -41,6 +43,7 @@ export default function PreviewPanel({
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [showConsole, setShowConsole] = useState(false)
+  const [useWebContainer, setUseWebContainer] = useState(true) // 🔥 Toggle WebContainer
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   // Update iframe when code changes
@@ -261,14 +264,54 @@ export default function PreviewPanel({
             </div>
           </div>
         ) : projectType === 'multi-files' && files ? (
-          // 🔷 MODE MULTI-FICHIERS : Afficher FileExplorer
-          <FileExplorer
-            projectName={projectName || 'project'}
-            files={files}
-            mainFile={mainFile || files[0]?.path}
-            setupInstructions={setupInstructions || 'No setup instructions provided'}
-            onDownload={() => generateAndDownloadZip(projectName || 'project', files)}
-          />
+          // 🔷 MODE MULTI-FICHIERS : WebContainer Preview OU FileExplorer
+          <>
+            {/* Barre de toggle WebContainer / FileExplorer */}
+            <div className="absolute top-2 right-2 z-10 flex gap-2 bg-slate-900/95 backdrop-blur-sm rounded-lg p-1 border border-slate-700">
+              <button
+                onClick={() => setUseWebContainer(true)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                  useWebContainer
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:bg-slate-800'
+                }`}
+                title="Preview avec WebContainer (Node.js dans le navigateur)"
+              >
+                <PlayCircle className="w-4 h-4" />
+                <span>Live Preview</span>
+              </button>
+              
+              <button
+                onClick={() => setUseWebContainer(false)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                  !useWebContainer
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-400 hover:bg-slate-800'
+                }`}
+                title="Explorer les fichiers et télécharger"
+              >
+                <Code className="w-4 h-4" />
+                <span>Files & Download</span>
+              </button>
+            </div>
+
+            {/* Contenu selon le mode */}
+            {useWebContainer ? (
+              <WebContainerPreview
+                files={files}
+                projectName={projectName || 'project'}
+                onFallback={() => setUseWebContainer(false)}
+              />
+            ) : (
+              <FileExplorer
+                projectName={projectName || 'project'}
+                files={files}
+                mainFile={mainFile || files[0]?.path}
+                setupInstructions={setupInstructions || 'No setup instructions provided'}
+                onDownload={() => generateAndDownloadZip(projectName || 'project', files)}
+              />
+            )}
+          </>
         ) : (
           // 🔹 MODE SINGLE-FILE : Afficher Preview/Code comme avant
           <>
