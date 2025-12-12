@@ -226,7 +226,9 @@ TYPE 1 (HTML unique) - RETOURNER DIRECTEMENT:
 ...
 </html>
 
-TYPE 2 (Multi-fichiers) - RETOURNER CE JSON:
+TYPE 2 (Multi-fichiers) - RETOURNER **OBLIGATOIREMENT** dans ce format **SANS AUCUN TEXTE EXPLICATIF** :
+
+```json
 {
   "projectType": "multi-files",
   "projectName": "nom-du-projet",
@@ -251,12 +253,16 @@ TYPE 2 (Multi-fichiers) - RETOURNER CE JSON:
   "mainFile": "server.js",
   "setupInstructions": "1. npm install\n2. npm start\n3. Ouvrir http://localhost:3000"
 }
+```
 
-IMPORTANT TYPE 2:
-- Retourner UNIQUEMENT le JSON (pas de texte avant/après)
-- Inclure TOUS les fichiers nécessaires (package.json, README.md, .env.example, etc.)
-- Code complet et fonctionnel dans chaque fichier
-- setupInstructions claires et précises
+🚨 RÈGLES STRICTES TYPE 2:
+1. COMMENCER DIRECTEMENT PAR ```json (RIEN AVANT)
+2. PAS de texte explicatif avant ou après le JSON
+3. PAS de description du projet en dehors du JSON
+4. JUSTE le bloc JSON entre ```json et ```
+5. Inclure TOUS les fichiers nécessaires (package.json, README.md, .env.example, etc.)
+6. Code complet et fonctionnel dans chaque fichier
+7. setupInstructions claires et précises
 
 ═══════════════════════════════════════════════════════════════════
 
