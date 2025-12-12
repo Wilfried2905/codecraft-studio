@@ -17,6 +17,21 @@ export type FileNode =
   | { directory: FileSystemTree }
 
 /**
+ * Nettoie les échappements excessifs dans le contenu des fichiers
+ * Corrige les doubles backslashes : \\" → " et \\\\ → \
+ */
+function cleanEscapedContent(content: string): string {
+  // Remplacer les doubles échappements
+  let cleaned = content
+    .replace(/\\\\"/g, '"')        // \\" → "
+    .replace(/\\\\\\\\/g, '\\')    // \\\\ → \
+    .replace(/\\\\n/g, '\n')       // \\n → \n (newlines)
+    .replace(/\\\\t/g, '\t')       // \\t → \t (tabs)
+  
+  return cleaned
+}
+
+/**
  * Convertit un tableau de fichiers vers FileSystemTree WebContainer
  * 
  * Exemple Input:
@@ -64,11 +79,11 @@ export function convertToFileSystemTree(files: FileItem[]): FileSystemTree {
       }
     }
 
-    // Ajouter le fichier au dernier niveau
+    // Ajouter le fichier au dernier niveau avec contenu nettoyé
     const fileName = pathParts[pathParts.length - 1]
     currentLevel[fileName] = {
       file: {
-        contents: file.content
+        contents: cleanEscapedContent(file.content)
       }
     }
   }
