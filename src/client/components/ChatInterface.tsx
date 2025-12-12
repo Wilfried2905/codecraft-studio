@@ -45,7 +45,17 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
   }
 
   const handleSend = () => {
-    if (!input.trim() || loading) return
+    console.log('🟢 ChatInterface.handleSend() appelé')
+    console.log('🟢 Input:', input)
+    console.log('🟢 Loading:', loading)
+    console.log('🟢 onSendMessage type:', typeof onSendMessage)
+    
+    if (!input.trim() || loading) {
+      console.log('🟡 Envoi bloqué - input vide ou loading actif')
+      return
+    }
+    
+    console.log('🟢 Appel onSendMessage avec:', input.trim())
     onSendMessage(input.trim(), uploadedFiles)
     setInput('')
     setUploadedFiles([])
@@ -192,7 +202,11 @@ export default function ChatInterface({ messages, onSendMessage, loading }: Chat
             
             {/* Send Button - Stacked below */}
             <button
-              onClick={handleSend}
+              onClick={(e) => {
+                console.log('🟣 Bouton cliqué !', e)
+                console.log('🟣 Disabled:', loading || !input.trim())
+                handleSend()
+              }}
               disabled={loading || !input.trim()}
               className="p-2 bg-gradient-to-r from-primary-500 to-secondary-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center"
               title={loading ? "Création en cours..." : "Envoyer"}

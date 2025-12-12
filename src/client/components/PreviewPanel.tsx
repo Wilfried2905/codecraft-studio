@@ -3,17 +3,39 @@ import { Code, Eye, Smartphone, Tablet, Monitor, RefreshCw, ExternalLink, Search
 import MonacoEditor from './MonacoEditor'
 import SearchReplacePanel from './SearchReplacePanel'
 import ConsolePanel from './ConsolePanel'
+import { FileExplorer } from './FileExplorer'
+import { generateAndDownloadZip } from '../utils/zipGenerator'
+
+interface FileItem {
+  path: string
+  content: string
+}
 
 interface PreviewPanelProps {
   code: string
   loading: boolean
   onCodeChange?: (code: string) => void
+  // 🔥 Nouveau : Support multi-fichiers
+  projectType?: 'single-file' | 'multi-files'
+  projectName?: string
+  files?: FileItem[]
+  mainFile?: string
+  setupInstructions?: string
 }
 
 type ViewMode = 'preview' | 'code' | 'split'
 type DeviceMode = 'desktop' | 'tablet' | 'mobile'
 
-export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPanelProps) {
+export default function PreviewPanel({ 
+  code, 
+  loading, 
+  onCodeChange,
+  projectType = 'single-file',
+  projectName,
+  files,
+  mainFile,
+  setupInstructions
+}: PreviewPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('preview')
   const [deviceMode, setDeviceMode] = useState<DeviceMode>('desktop')
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -238,7 +260,17 @@ export default function PreviewPanel({ code, loading, onCodeChange }: PreviewPan
               </p>
             </div>
           </div>
+        ) : projectType === 'multi-files' && files ? (
+          // 🔷 MODE MULTI-FICHIERS : Afficher FileExplorer
+          <FileExplorer
+            projectName={projectName || 'project'}
+            files={files}
+            mainFile={mainFile || files[0]?.path}
+            setupInstructions={setupInstructions || 'No setup instructions provided'}
+            onDownload={() => generateAndDownloadZip(projectName || 'project', files)}
+          />
         ) : (
+          // 🔹 MODE SINGLE-FILE : Afficher Preview/Code comme avant
           <>
             {viewMode === 'preview' && (
               <div className="h-full flex items-center justify-center bg-slate-900 p-4 relative">

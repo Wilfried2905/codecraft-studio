@@ -205,7 +205,7 @@ export class AgentOrchestrator {
   async execute(
     plan: OrchestrationPlan,
     requirements: Requirements,
-    apiUrl: string = '/api/generate'
+    apiUrl: string = 'http://localhost:8787/api/generate'
   ): Promise<AgentResult[]> {
     const results: AgentResult[] = [];
 

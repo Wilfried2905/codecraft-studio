@@ -24,6 +24,11 @@ import { useAuth } from './context/AuthContext'
 import { useRealtimeCollaboration } from './hooks/useRealtimeCollaboration'
 import type { Project } from './services/supabaseClient'
 
+interface FileItem {
+  path: string
+  content: string
+}
+
 interface Message {
   role: 'user' | 'assistant'
   content: string
@@ -41,6 +46,12 @@ interface Message {
   }>
   code?: string
   progress?: number
+  // 🔥 Nouveau : Support multi-fichiers
+  projectType?: 'single-file' | 'multi-files'
+  projectName?: string
+  files?: FileItem[]
+  mainFile?: string
+  setupInstructions?: string
 }
 
 export default function AppIDE() {
@@ -165,14 +176,25 @@ export default function AppIDE() {
         executionPlan,
         agentStatuses,
         code: response.code,
-        progress: 100
+        progress: 100,
+        // 🔥 Nouveau : Données multi-fichiers
+        projectType: response.projectType,
+        projectName: response.projectName,
+        files: response.files,
+        mainFile: response.mainFile,
+        setupInstructions: response.setupInstructions
       }
       // Supprimer le message de chargement et ajouter le résultat final
       setMessages(prev => [...prev.slice(0, -1), assistantMessage])
 
       // If code was generated, update the preview
-      if (response.code) {
-        setGeneratedCode(response.code)
+      if (response.code || response.files) {
+        if (response.code) {
+          setGeneratedCode(response.code)
+        } else if (response.files && response.files.length > 0) {
+          // Pour multi-fichiers, stocker le premier fichier dans generatedCode (pour compatibilité)
+          setGeneratedCode(response.files[0].content)
+        }
         
         // Extract project name from requirements if available
         if (response.requirements?.appType) {
@@ -286,6 +308,11 @@ export default function AppIDE() {
                 updateProjectCode(newCode)
               }
             }}
+            projectType={messages[messages.length - 1]?.projectType}
+            projectName={messages[messages.length - 1]?.projectName}
+            files={messages[messages.length - 1]?.files}
+            mainFile={messages[messages.length - 1]?.mainFile}
+            setupInstructions={messages[messages.length - 1]?.setupInstructions}
           />
         </div>
       </div>

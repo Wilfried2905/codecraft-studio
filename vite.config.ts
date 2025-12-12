@@ -18,7 +18,27 @@ export default defineConfig({
       'localhost'
     ],
     // Disable host check for development
-    strictPort: false
+    strictPort: false,
+    // IMPORTANT: Proxy API requests to Hono backend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+        configure: (proxy, options) => {
+          // Fallback: if 8787 not running, return placeholder
+          proxy.on('error', (err, req, res) => {
+            console.warn('⚠️ API proxy error (backend not running):', err.message)
+            if (res.writeHead) {
+              res.writeHead(503, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({
+                error: 'Backend not running',
+                message: 'Start Hono backend with: wrangler pages dev dist --port 8787'
+              }))
+            }
+          })
+        }
+      }
+    }
   },
   build: {
     outDir: 'dist-client',
