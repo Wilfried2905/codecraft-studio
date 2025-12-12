@@ -741,11 +741,9 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
       
       console.log('🔍 Recherche JSON, premiers chars:', cleanResponse.substring(0, 100))
       
-      // Si ça commence par {, essayer de parser
-      if (cleanResponse.startsWith('{')) {
-        jsonString = cleanResponse
-        console.log('✅ JSON détecté, taille:', jsonString.length, 'chars')
-      }
+      // ⚠️ DÉSACTIVÉ : Parsing JSON direct (trop d'erreurs d'échappement)
+      // À la place : Toujours utiliser fallback pour Type 2
+      console.log('🔍 Type 2 suggéré par prompt, on skip le parsing JSON direct')
       
       if (!jsonString) {
         // Méthode 2 : Chercher JSON brut contenant "projectType"
@@ -801,10 +799,10 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
             throw new Error('Type 2 détecté mais aucun fichier trouvé')
           }
         }
-      } else if (shouldBeType2) {
-        // 🔥 FALLBACK RADICAL : Si prompt suggère Type 2 mais pas de JSON trouvé
-        // → On essaie d'extraire les fichiers depuis le texte brut
-        console.log('⚠️ Prompt suggère Type 2 mais aucun JSON trouvé')
+      if (shouldBeType2) {
+        // 🔥 FALLBACK RADICAL : Si prompt suggère Type 2, toujours utiliser extraction manuelle
+        // (Le parsing JSON direct échoue trop souvent avec sur-échappement)
+        console.log('⚠️ Type 2 détecté par prompt, extraction fichiers manuelle activée')
         console.log('🔥 FALLBACK : Tentative extraction fichiers depuis texte brut')
         
         // Chercher des patterns de fichiers dans la réponse
