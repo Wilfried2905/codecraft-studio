@@ -716,10 +716,24 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
         console.log('🔍 JSON trouvé dans code block')
       } else {
         // Méthode 2 : Chercher JSON brut contenant "projectType"
-        const jsonMatch = fullResponse.match(/\{[\s\S]*?"projectType"[\s\S]*?\}/)
-        if (jsonMatch) {
-          jsonString = jsonMatch[0]
-          console.log('🔍 JSON brut trouvé dans réponse')
+        // Stratégie : Trouver le JSON le plus long possible
+        const startMatch = fullResponse.match(/\{\s*"projectType"\s*:\s*"multi-files"/)
+        if (startMatch) {
+          const startIndex = startMatch.index!
+          // Parser avec compteur de brackets pour trouver la fin
+          let bracketCount = 0
+          let endIndex = startIndex
+          for (let i = startIndex; i < fullResponse.length; i++) {
+            if (fullResponse[i] === '{') bracketCount++
+            if (fullResponse[i] === '}') bracketCount--
+            if (bracketCount === 0) {
+              endIndex = i + 1
+              break
+            }
+          }
+          jsonString = fullResponse.substring(startIndex, endIndex)
+          console.log('🔍 JSON brut trouvé dans réponse (bracket matching)')
+          console.log('📏 Taille JSON:', jsonString.length, 'caractères')
         }
       }
 
