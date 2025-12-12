@@ -800,7 +800,7 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
             throw new Error('Type 2 détecté mais aucun fichier trouvé')
           }
         }
-      if (shouldBeType2) {
+      } else if (shouldBeType2) {
         // 🔥 FALLBACK RADICAL : Si prompt suggère Type 2, toujours utiliser extraction manuelle
         // (Le parsing JSON direct échoue trop souvent avec sur-échappement)
         console.log('⚠️ Type 2 détecté par prompt, extraction fichiers manuelle activée')
