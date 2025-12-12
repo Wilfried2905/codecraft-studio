@@ -708,19 +708,23 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
 
     // Essayer de parser comme JSON (Type 2)
     try {
-      // Méthode 1 : Chercher dans des code blocks JSON/JavaScript
+      // Méthode 1 : EXTRACTION AGRESSIVE de TOUS les code blocks
       let jsonString = null
-      const codeBlockMatch = fullResponse.match(/```(?:json|javascript|js)?\s*([\s\S]*?)```/)
-      if (codeBlockMatch) {
-        const blockContent = codeBlockMatch[1].trim()
-        console.log('🔍 Code block trouvé, taille:', blockContent.length)
+      
+      // Étape 1 : Chercher TOUS les code blocks (json, javascript, js, ou SANS langage)
+      const allCodeBlocks = fullResponse.match(/```[a-z]*\s*([\s\S]*?)```/g) || []
+      console.log(`🔍 ${allCodeBlocks.length} code block(s) trouvé(s)`)
+      
+      for (const block of allCodeBlocks) {
+        // Extraire le contenu SANS les ```
+        const blockContent = block.replace(/```[a-z]*\s*/g, '').replace(/```$/g, '').trim()
+        console.log('🔍 Analyse block, taille:', blockContent.length, 'premiers chars:', blockContent.substring(0, 50))
         
-        // Vérifier si c'est du JSON (commence par { et contient "projectType")
-        if (blockContent.startsWith('{') && blockContent.includes('"projectType"')) {
+        // Vérifier si c'est du JSON valide pour Type 2
+        if (blockContent.startsWith('{') && blockContent.includes('"projectType"') && blockContent.includes('"multi-files"')) {
           jsonString = blockContent
-          console.log('🔍 JSON trouvé dans code block')
-        } else {
-          console.log('⚠️ Code block trouvé mais pas de JSON valide')
+          console.log('✅ JSON Type 2 trouvé dans code block !')
+          break
         }
       }
       
@@ -779,8 +783,52 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
           }
         }
       } else if (shouldBeType2) {
-        // Fallback : Si prompt suggère Type 2 mais pas de JSON trouvé
-        console.log('⚠️ Prompt suggère Type 2 mais aucun JSON trouvé, fallback Type 1')
+        // 🔥 FALLBACK RADICAL : Si prompt suggère Type 2 mais pas de JSON trouvé
+        // → On essaie d'extraire les fichiers depuis le texte brut
+        console.log('⚠️ Prompt suggère Type 2 mais aucun JSON trouvé')
+        console.log('🔥 FALLBACK : Tentative extraction fichiers depuis texte brut')
+        
+        // Chercher des patterns de fichiers dans la réponse
+        const fileMatches = fullResponse.matchAll(/```(\w+)?\s*\n([\s\S]*?)```/g)
+        const extractedFiles: any[] = []
+        let fileIndex = 0
+        
+        for (const match of fileMatches) {
+          const language = match[1] || 'txt'
+          const content = match[2].trim()
+          
+          // Déterminer le nom de fichier basé sur le langage
+          let filename = ''
+          if (language === 'json' && content.includes('"name"')) {
+            filename = 'package.json'
+          } else if (language === 'javascript' || language === 'jsx') {
+            filename = fileIndex === 0 ? 'src/App.jsx' : `src/Component${fileIndex}.jsx`
+          } else if (language === 'html') {
+            filename = 'index.html'
+          } else if (language === 'css') {
+            filename = 'src/styles.css'
+          } else {
+            filename = `file${fileIndex}.${language}`
+          }
+          
+          extractedFiles.push({ path: filename, content })
+          fileIndex++
+        }
+        
+        if (extractedFiles.length > 0) {
+          console.log('✅ FALLBACK réussi:', extractedFiles.length, 'fichiers extraits')
+          parsedProject = {
+            projectType: 'multi-files',
+            projectName: 'react-app',
+            files: extractedFiles,
+            mainFile: extractedFiles[0]?.path || 'index.html',
+            setupInstructions: 'npm install && npm run dev'
+          }
+          projectType = 'multi-files'
+          console.log('🔷 TYPE 2 FORCÉ (via fallback)')
+        } else {
+          console.log('❌ FALLBACK échoué, aucun fichier extractible')
+        }
       }
     } catch (e) {
       // Pas du JSON valide, c'est Type 1
