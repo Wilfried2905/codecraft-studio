@@ -723,13 +723,14 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
       let jsonString = null
       
       // Étape 1 : Chercher TOUS les code blocks (json, javascript, js, ou SANS langage)
-      const allCodeBlocks = fullResponse.match(/```[a-z]*\s*([\s\S]*?)```/g) || []
+      // 🔥 FIX : Regex plus robuste pour capturer le JSON complet même avec triple backticks
+      const codeBlockRegex = /```(?:json|javascript|js)?\s*\n?([\s\S]+?)```/g
+      const allCodeBlocks = Array.from(fullResponse.matchAll(codeBlockRegex))
       console.log(`🔍 ${allCodeBlocks.length} code block(s) trouvé(s)`)
       
-      for (const block of allCodeBlocks) {
-        // Extraire le contenu SANS les ```
-        const blockContent = block.replace(/```[a-z]*\s*/g, '').replace(/```$/g, '').trim()
-        console.log('🔍 Analyse block, taille:', blockContent.length, 'premiers chars:', blockContent.substring(0, 50))
+      for (const match of allCodeBlocks) {
+        const blockContent = match[1].trim()
+        console.log('🔍 Analyse block, taille:', blockContent.length, 'premiers chars:', blockContent.substring(0, 80))
         
         // Vérifier si c'est du JSON valide pour Type 2
         if (blockContent.startsWith('{') && blockContent.includes('"projectType"') && blockContent.includes('"multi-files"')) {
