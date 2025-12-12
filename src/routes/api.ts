@@ -720,20 +720,36 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
         const startMatch = fullResponse.match(/\{\s*"projectType"\s*:\s*"multi-files"/)
         if (startMatch) {
           const startIndex = startMatch.index!
+          console.log('🔍 Début JSON trouvé à position:', startIndex)
+          
           // Parser avec compteur de brackets pour trouver la fin
           let bracketCount = 0
           let endIndex = startIndex
+          let foundEnd = false
+          
           for (let i = startIndex; i < fullResponse.length; i++) {
             if (fullResponse[i] === '{') bracketCount++
-            if (fullResponse[i] === '}') bracketCount--
-            if (bracketCount === 0) {
-              endIndex = i + 1
-              break
+            if (fullResponse[i] === '}') {
+              bracketCount--
+              if (bracketCount === 0) {
+                endIndex = i + 1
+                foundEnd = true
+                break
+              }
             }
           }
-          jsonString = fullResponse.substring(startIndex, endIndex)
-          console.log('🔍 JSON brut trouvé dans réponse (bracket matching)')
-          console.log('📏 Taille JSON:', jsonString.length, 'caractères')
+          
+          if (foundEnd) {
+            jsonString = fullResponse.substring(startIndex, endIndex)
+            console.log('🔍 JSON brut trouvé dans réponse (bracket matching)')
+            console.log('📏 Taille JSON:', jsonString.length, 'caractères')
+            console.log('📏 Début:', jsonString.substring(0, 100))
+            console.log('📏 Fin:', jsonString.substring(jsonString.length - 100))
+          } else {
+            console.log('⚠️ Fin du JSON introuvable (brackets non fermés)')
+          }
+        } else {
+          console.log('⚠️ Début du JSON introuvable ("projectType":"multi-files" non trouvé)')
         }
       }
 
