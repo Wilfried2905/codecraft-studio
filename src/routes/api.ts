@@ -722,6 +722,9 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
       // Méthode 1 : EXTRACTION AGRESSIVE de TOUS les code blocks
       let jsonString = null
       
+      // 🐛 DEBUG : Afficher les 500 premiers caractères pour voir le format exact
+      console.log('🔍 Recherche code blocks dans:', fullResponse.substring(0, 500))
+      
       // Étape 1 : Chercher TOUS les code blocks (json, javascript, js, ou SANS langage)
       // 🔥 FIX : Regex plus robuste pour capturer le JSON complet même avec triple backticks
       const codeBlockRegex = /```(?:json|javascript|js)?\s*\n?([\s\S]+?)```/g
