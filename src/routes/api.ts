@@ -190,8 +190,73 @@ api.post('/generate', async (c) => {
     const CLAUDE_CODE_SYSTEM_PROMPT = `Tu es CodeCraft AI Developer, un assistant développeur expert qui pense et agit exactement comme Claude Code.
 
 🎯 MISSION PRINCIPALE:
-Générer des applications web complètes, fonctionnelles et production-ready en HTML/CSS/JS pur.
-Chaque application doit être immédiatement utilisable, sans configuration supplémentaire.
+Générer des applications web complètes, fonctionnelles et production-ready.
+Tu dois DÉTECTER automatiquement si c'est un projet simple (1 fichier) ou complexe (multi-fichiers).
+
+═══════════════════════════════════════════════════════════════════
+
+🔍 DÉTECTION AUTOMATIQUE DU TYPE DE PROJET:
+
+TYPE 1 - FICHIER HTML UNIQUE (Preview instantané):
+CRITÈRES:
+- Demande simple: "todo list", "calculatrice", "formulaire", "landing page"
+- Pas de mention: "backend", "Node.js", "API", "serveur", "base de données"
+- Pas de mention: "React", "Vue", "Angular", "framework"
+- Application frontend pure avec LocalStorage max
+GÉNÉRATION: 1 seul fichier HTML complet
+FORMAT RETOUR: Code HTML brut (<!DOCTYPE html>...</html>)
+
+TYPE 2 - PROJET MULTI-FICHIERS (Téléchargement):
+CRITÈRES:
+- Mention explicite: "backend", "Node.js", "Express", "API", "serveur"
+- Mention: "React", "Vue", "Next.js", "multi-page", "structure projet"
+- Mention: "MongoDB", "PostgreSQL", "Prisma", "base de données"
+- Mention: "authentification JWT", "WebSocket", "temps réel"
+- Application full-stack ou framework moderne
+GÉNÉRATION: Plusieurs fichiers organisés
+FORMAT RETOUR: JSON avec structure de fichiers
+
+═══════════════════════════════════════════════════════════════════
+
+📦 FORMAT DE RÉPONSE SELON TYPE:
+
+TYPE 1 (HTML unique) - RETOURNER DIRECTEMENT:
+<!DOCTYPE html>
+<html lang="fr">
+...
+</html>
+
+TYPE 2 (Multi-fichiers) - RETOURNER CE JSON:
+{
+  "projectType": "multi-files",
+  "projectName": "nom-du-projet",
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{ ... }"
+    },
+    {
+      "path": "server.js",
+      "content": "const express = require('express');\n..."
+    },
+    {
+      "path": "public/index.html",
+      "content": "<!DOCTYPE html>..."
+    },
+    {
+      "path": "models/User.js",
+      "content": "const mongoose = require('mongoose');\n..."
+    }
+  ],
+  "mainFile": "server.js",
+  "setupInstructions": "1. npm install\n2. npm start\n3. Ouvrir http://localhost:3000"
+}
+
+IMPORTANT TYPE 2:
+- Retourner UNIQUEMENT le JSON (pas de texte avant/après)
+- Inclure TOUS les fichiers nécessaires (package.json, README.md, .env.example, etc.)
+- Code complet et fonctionnel dans chaque fichier
+- setupInstructions claires et précises
 
 ═══════════════════════════════════════════════════════════════════
 
@@ -503,7 +568,78 @@ TOUJOURS assumer les meilleures pratiques et features attendues.
 
 ═══════════════════════════════════════════════════════════════════
 
+═══════════════════════════════════════════════════════════════════
+
+📚 EXEMPLES CONCRETS TYPE 2 (Multi-fichiers):
+
+EXEMPLE 1 - "Créer une todo list avec backend Node.js et MongoDB":
+DÉTECTION: Mention "backend" + "Node.js" + "MongoDB" → TYPE 2
+GÉNÉRATION:
+{
+  "projectType": "multi-files",
+  "projectName": "todo-app-fullstack",
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\n  \"name\": \"todo-app\",\n  \"dependencies\": {\n    \"express\": \"^4.18.0\",\n    \"mongoose\": \"^7.0.0\",\n    \"cors\": \"^2.8.5\"\n  },\n  \"scripts\": {\n    \"start\": \"node server.js\"\n  }\n}"
+    },
+    {
+      "path": "server.js",
+      "content": "const express = require('express');\nconst mongoose = require('mongoose');\n..."
+    },
+    {
+      "path": "models/Todo.js",
+      "content": "const mongoose = require('mongoose');\n..."
+    },
+    {
+      "path": "public/index.html",
+      "content": "<!DOCTYPE html>..."
+    },
+    {
+      "path": "README.md",
+      "content": "# Todo App Full-Stack\n..."
+    }
+  ],
+  "mainFile": "server.js",
+  "setupInstructions": "1. npm install\n2. Configurer MongoDB dans .env\n3. npm start\n4. Ouvrir http://localhost:3000"
+}
+
+EXEMPLE 2 - "Créer une app React avec authentification":
+DÉTECTION: Mention "React" + "authentification" → TYPE 2
+GÉNÉRATION:
+{
+  "projectType": "multi-files",
+  "projectName": "react-auth-app",
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\"\n  }\n}"
+    },
+    {
+      "path": "src/App.jsx",
+      "content": "import React from 'react';\n..."
+    },
+    {
+      "path": "src/components/Login.jsx",
+      "content": "..."
+    },
+    {
+      "path": "public/index.html",
+      "content": "..."
+    }
+  ],
+  "mainFile": "src/App.jsx",
+  "setupInstructions": "1. npm install\n2. npm start"
+}
+
+EXEMPLE 3 - "Créer une simple calculatrice":
+DÉTECTION: Pas de mention backend/framework → TYPE 1
+GÉNÉRATION: Code HTML direct (<!DOCTYPE html>...)
+
+═══════════════════════════════════════════════════════════════════
+
 TU ES MAINTENANT PRÊT À GÉNÉRER DES APPLICATIONS DE QUALITÉ IDENTIQUE À CLAUDE CODE.
+DÉTECTE AUTOMATIQUEMENT LE TYPE ET GÉNÈRE SELON LE FORMAT APPROPRIÉ.
 CHAQUE LIGNE DE CODE DOIT REFLÉTER CETTE EXCELLENCE.`;
 
     const systemPrompt = CLAUDE_CODE_SYSTEM_PROMPT
@@ -550,44 +686,88 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
     const data = await response.json()
     const fullResponse = data.content[0].text
 
-    // 🔥 EXTRACTION du code HTML du bloc ```html si présent
-    const codeBlockMatch = fullResponse.match(/```(?:html)?\s*([\s\S]*?)```/)
-    const extractedCode = codeBlockMatch ? codeBlockMatch[1].trim() : fullResponse
+    // 🔥 DÉTECTION AUTOMATIQUE : Type 1 (HTML) vs Type 2 (Multi-fichiers)
+    let projectType = 'single-file' // Par défaut
+    let parsedProject = null
 
-    // 🔥 CORRECTION : Extraire le texte court SANS le code (pour le chat)
-    let shortMessage = '✅ Application générée avec succès !'
-    
-    if (codeBlockMatch) {
-      // Supprimer TOUS les blocs de code de la réponse
-      const cleanedResponse = fullResponse.replace(/```[\s\S]*?```/g, '').trim()
-      
-      // Garder seulement les lignes qui ne contiennent PAS de code HTML
-      const lines = cleanedResponse.split('\n').filter(line => {
-        const trimmed = line.trim()
-        return trimmed.length > 0 && 
-               !trimmed.startsWith('<') && 
-               !trimmed.includes('<!DOCTYPE') &&
-               !trimmed.includes('<html') &&
-               !trimmed.includes('<head') &&
-               !trimmed.includes('<body')
-      })
-      
-      if (lines.length > 0) {
-        shortMessage = lines.slice(0, 2).join(' ').substring(0, 150)
+    // Essayer de parser comme JSON (Type 2)
+    try {
+      const jsonMatch = fullResponse.match(/\{[\s\S]*"projectType"[\s\S]*\}/)
+      if (jsonMatch) {
+        parsedProject = JSON.parse(jsonMatch[0])
+        if (parsedProject.projectType === 'multi-files') {
+          projectType = 'multi-files'
+          console.log('🔷 TYPE 2 DÉTECTÉ : Projet multi-fichiers')
+          console.log('📦 Projet:', parsedProject.projectName)
+          console.log('📁 Fichiers:', parsedProject.files.length)
+        }
       }
+    } catch (e) {
+      // Pas du JSON valide, c'est Type 1
+      console.log('🔹 TYPE 1 DÉTECTÉ : Fichier HTML unique')
     }
 
-    console.log('📤 Code extrait:', extractedCode.substring(0, 100) + '...')
-    console.log('📤 Message:', shortMessage.substring(0, 100))
+    // 🔹 TYPE 1 : FICHIER HTML UNIQUE (comme avant)
+    if (projectType === 'single-file') {
+      // EXTRACTION du code HTML du bloc ```html si présent
+      const codeBlockMatch = fullResponse.match(/```(?:html)?\s*([\s\S]*?)```/)
+      const extractedCode = codeBlockMatch ? codeBlockMatch[1].trim() : fullResponse
 
-    return c.json({
-      success: true,
-      code: extractedCode,  // HTML PUR (sans ```html)
-      message: shortMessage,  // Message court
-      agent: agent || 'Design',
-      timestamp: new Date().toISOString(),
-      usage: data.usage
-    })
+      // Extraire le texte court SANS le code (pour le chat)
+      let shortMessage = '✅ Application générée avec succès !'
+      
+      if (codeBlockMatch) {
+        // Supprimer TOUS les blocs de code de la réponse
+        const cleanedResponse = fullResponse.replace(/```[\s\S]*?```/g, '').trim()
+        
+        // Garder seulement les lignes qui ne contiennent PAS de code HTML
+        const lines = cleanedResponse.split('\n').filter(line => {
+          const trimmed = line.trim()
+          return trimmed.length > 0 && 
+                 !trimmed.startsWith('<') && 
+                 !trimmed.includes('<!DOCTYPE') &&
+                 !trimmed.includes('<html') &&
+                 !trimmed.includes('<head') &&
+                 !trimmed.includes('<body')
+        })
+        
+        if (lines.length > 0) {
+          shortMessage = lines.slice(0, 2).join(' ').substring(0, 150)
+        }
+      }
+
+      console.log('📤 Code extrait:', extractedCode.substring(0, 100) + '...')
+      console.log('📤 Message:', shortMessage.substring(0, 100))
+
+      return c.json({
+        success: true,
+        projectType: 'single-file',
+        code: extractedCode,  // HTML PUR (sans ```html)
+        message: shortMessage,  // Message court
+        agent: agent || 'Design',
+        timestamp: new Date().toISOString(),
+        usage: data.usage
+      })
+    }
+
+    // 🔷 TYPE 2 : PROJET MULTI-FICHIERS
+    else {
+      console.log('📤 Projet multi-fichiers:', parsedProject.projectName)
+      console.log('📤 Fichiers:', parsedProject.files.map((f: any) => f.path).join(', '))
+
+      return c.json({
+        success: true,
+        projectType: 'multi-files',
+        projectName: parsedProject.projectName,
+        files: parsedProject.files,
+        mainFile: parsedProject.mainFile,
+        setupInstructions: parsedProject.setupInstructions,
+        message: `📦 Projet "${parsedProject.projectName}" généré avec ${parsedProject.files.length} fichiers`,
+        agent: agent || 'Full-Stack',
+        timestamp: new Date().toISOString(),
+        usage: data.usage
+      })
+    }
 
   } catch (error: any) {
     console.error('Generation error:', error)
