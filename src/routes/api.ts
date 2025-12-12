@@ -692,19 +692,40 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
 
     // Essayer de parser comme JSON (Type 2)
     try {
-      const jsonMatch = fullResponse.match(/\{[\s\S]*"projectType"[\s\S]*\}/)
-      if (jsonMatch) {
-        parsedProject = JSON.parse(jsonMatch[0])
+      // Méthode 1 : Chercher dans des code blocks JSON
+      let jsonString = null
+      const codeBlockMatch = fullResponse.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (codeBlockMatch) {
+        jsonString = codeBlockMatch[1].trim()
+      } else {
+        // Méthode 2 : Chercher JSON brut contenant "projectType"
+        const jsonMatch = fullResponse.match(/\{[\s\S]*?"projectType"\s*:\s*"multi-files"[\s\S]*?\}(?=\s*$|```|\n\n)/)
+        if (jsonMatch) {
+          jsonString = jsonMatch[0]
+        }
+      }
+
+      if (jsonString) {
+        console.log('🔍 JSON brut trouvé:', jsonString.substring(0, 200) + '...')
+        parsedProject = JSON.parse(jsonString)
+        
         if (parsedProject.projectType === 'multi-files') {
           projectType = 'multi-files'
           console.log('🔷 TYPE 2 DÉTECTÉ : Projet multi-fichiers')
           console.log('📦 Projet:', parsedProject.projectName)
-          console.log('📁 Fichiers:', parsedProject.files.length)
+          console.log('📁 Fichiers:', parsedProject.files?.length || 0)
+          
+          // Validation minimale
+          if (!parsedProject.files || parsedProject.files.length === 0) {
+            throw new Error('Type 2 détecté mais aucun fichier trouvé')
+          }
         }
       }
     } catch (e) {
       // Pas du JSON valide, c'est Type 1
       console.log('🔹 TYPE 1 DÉTECTÉ : Fichier HTML unique')
+      console.log('Raison:', e instanceof Error ? e.message : 'Parse error')
+      projectType = 'single-file'
     }
 
     // 🔹 TYPE 1 : FICHIER HTML UNIQUE (comme avant)
