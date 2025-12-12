@@ -725,20 +725,41 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
       // 🐛 DEBUG : Afficher les 500 premiers caractères pour voir le format exact
       console.log('🔍 Recherche code blocks dans:', fullResponse.substring(0, 500))
       
-      // Étape 1 : Chercher TOUS les code blocks (json, javascript, js, ou SANS langage)
-      // 🔥 FIX : Regex plus robuste pour capturer le JSON complet même avec triple backticks
-      const codeBlockRegex = /```(?:json|javascript|js)?\s*\n?([\s\S]+?)```/g
-      const allCodeBlocks = Array.from(fullResponse.matchAll(codeBlockRegex))
-      console.log(`🔍 ${allCodeBlocks.length} code block(s) trouvé(s)`)
+      // Étape 1 : Extraction MANUELLE des code blocks pour éviter les problèmes de regex
+      // 🔥 FIX : Au lieu d'utiliser une regex, on cherche manuellement les délimiteurs
+      const codeBlockStarts = []
+      let searchPos = 0
       
-      for (const match of allCodeBlocks) {
-        const blockContent = match[1].trim()
-        console.log('🔍 Analyse block, taille:', blockContent.length, 'premiers chars:', blockContent.substring(0, 80))
+      // Trouver toutes les positions de ```
+      while (true) {
+        const pos = fullResponse.indexOf('```', searchPos)
+        if (pos === -1) break
+        codeBlockStarts.push(pos)
+        searchPos = pos + 3
+      }
+      
+      console.log(`🔍 ${Math.floor(codeBlockStarts.length / 2)} code block(s) potentiel(s) trouvé(s)`)
+      
+      // Parser chaque paire de ``` comme un code block
+      for (let i = 0; i < codeBlockStarts.length - 1; i += 2) {
+        const start = codeBlockStarts[i]
+        const end = codeBlockStarts[i + 1]
         
-        // Vérifier si c'est du JSON valide pour Type 2
-        if (blockContent.startsWith('{') && blockContent.includes('"projectType"') && blockContent.includes('"multi-files"')) {
+        // Extraire le contenu entre les deux ```
+        const fullBlock = fullResponse.substring(start + 3, end)
+        
+        // Séparer le langage du contenu
+        const firstNewline = fullBlock.indexOf('\n')
+        const lang = firstNewline > 0 ? fullBlock.substring(0, firstNewline).trim() : ''
+        const blockContent = firstNewline > 0 ? fullBlock.substring(firstNewline + 1).trim() : fullBlock.trim()
+        
+        console.log(`🔍 Block ${i/2 + 1}: lang="${lang}", taille=${blockContent.length} chars`)
+        
+        // Vérifier si c'est du JSON Type 2
+        if ((lang === 'json' || lang === '') && blockContent.startsWith('{') && blockContent.includes('"projectType"')) {
           jsonString = blockContent
           console.log('✅ JSON Type 2 trouvé dans code block !')
+          console.log('📏 Taille JSON:', jsonString.length, 'caractères')
           break
         }
       }
