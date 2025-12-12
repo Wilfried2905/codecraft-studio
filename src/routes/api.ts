@@ -686,6 +686,11 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
     const data = await response.json()
     const fullResponse = data.content[0].text
 
+    // 🐛 DEBUG : Voir les 500 premiers et derniers caractères de la réponse
+    console.log('📝 DÉBUT RÉPONSE (500 chars):', fullResponse.substring(0, 500))
+    console.log('📝 FIN RÉPONSE (500 chars):', fullResponse.substring(fullResponse.length - 500))
+    console.log('📏 TAILLE TOTALE:', fullResponse.length, 'caractères')
+
     // 🔥 DÉTECTION AUTOMATIQUE : Type 1 (HTML) vs Type 2 (Multi-fichiers)
     let projectType = 'single-file' // Par défaut
     let parsedProject = null
