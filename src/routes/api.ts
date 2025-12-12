@@ -744,8 +744,9 @@ Retourne UNIQUEMENT le code HTML, sans explications.`
       // ⚠️ DÉSACTIVÉ : Parsing JSON direct (trop d'erreurs d'échappement)
       // À la place : Toujours utiliser fallback pour Type 2
       console.log('🔍 Type 2 suggéré par prompt, on skip le parsing JSON direct')
+      jsonString = null // Force fallback
       
-      if (!jsonString) {
+      if (false && !jsonString) { // Désactivé (fallback toujours utilisé)
         // Méthode 2 : Chercher JSON brut contenant "projectType"
         // Stratégie : Trouver le JSON le plus long possible
         const startMatch = fullResponse.match(/\{\s*"projectType"\s*:\s*"multi-files"/)
