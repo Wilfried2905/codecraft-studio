@@ -83,18 +83,36 @@ export class AIDeveloper {
 
       const data = await response.json();
 
-      if (!data.code) {
-        throw new Error('No code returned from API');
+      // Gérer Type 1 (code) et Type 2 (files)
+      if (!data.code && !data.files) {
+        throw new Error('No code or files returned from API');
       }
 
-      logger.info('✅ [CLAUDE MODE] Code généré:', data.code.length, 'chars');
-
-      return {
-        type: 'execution',
-        message: data.message || '✅ **Application générée avec succès !**\n\nVotre application est prête dans le Preview.',
-        code: data.code,
-        executionPlan: '⚡ Génération directe avec Claude',
-      };
+      if (data.projectType === 'multi-files' && data.files) {
+        // TYPE 2 : Multi-fichiers
+        logger.info('✅ [CLAUDE MODE] Type 2 détecté:', data.files.length, 'fichiers');
+        
+        return {
+          type: 'execution',
+          message: data.message || `📦 Projet "${data.projectName}" créé avec ${data.files.length} fichiers`,
+          projectType: 'multi-files',
+          projectName: data.projectName,
+          files: data.files,
+          mainFile: data.mainFile,
+          setupInstructions: data.setupInstructions,
+          executionPlan: '⚡ Génération directe avec Claude',
+        };
+      } else {
+        // TYPE 1 : HTML simple
+        logger.info('✅ [CLAUDE MODE] Type 1 détecté:', data.code.length, 'chars');
+        
+        return {
+          type: 'execution',
+          message: data.message || '✅ **Application générée avec succès !**\n\nVotre application est prête dans le Preview.',
+          code: data.code,
+          executionPlan: '⚡ Génération directe avec Claude',
+        };
+      }
 
     } catch (error) {
       logError(error, 'AIDeveloper.generateDirect');
